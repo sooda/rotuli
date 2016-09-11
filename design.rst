@@ -1,8 +1,9 @@
 Early design plans
 ==================
 
-I looked at several simple generators (i don't want a wordpress-sized thing) and some were okay, some too hardcoded for, e.g., very post-centric approach, and I just wanted to learn me some Rust.
+I looked at several simple generators (i don't want a wordpress-sized thing) and most were too large, some were okay, some too hardcoded for, e.g., very post-centric approach, and I just wanted to learn me some Rust.
 Previously, I was planning to write this in Python, or to find one made in Python so I'd know how to hack it.
+I guess Jekyll would be good enough, too, just quickly skimmed it.
 
 Here's some mixed things I want for the new blog and for the engine.
 
@@ -10,9 +11,9 @@ Here's some mixed things I want for the new blog and for the engine.
 good looking samples
 --------------------
 
-- Nice layout and good source structure http://lucumr.pocoo.org/2016/7/10/rust-rest/ https://github.com/mitsuhiko/lucumr https://github.com/mitsuhiko/rstblog/tree/master/rstblog
+- Nice layout and good source structure http://lucumr.pocoo.org https://github.com/mitsuhiko/lucumr https://github.com/mitsuhiko/rstblog/tree/master/rstblog
 - http://stevelosh.com
-- per-post images, and i like the colors here http://www.windytan.com/
+- per-post images, and i like the colors here http://www.windytan.com/ (todo: diy background with random halton dots or something?)
 - http://gitready.com
 - http://ithare.com/
 - https://fgiesen.wordpress.com, not so minimal tho but the small number of categories for the navi bar is nice
@@ -27,9 +28,9 @@ high level requirements
 - understand lists of things: categories, all posts, posts of a certain date range, posts in a certain category
   - those generic "lists of things" for "for p in posts" or "in whatever" specified in site contents, not in engine
 - simple core and some module system to incrementally add things like image thumbnailer, an embedded video player, a source code highlighter or page comments
-- templates, not displayable as-is but used for compiling content into html
+- templates, not displayable as-is but used for compiling content into html, sort of like previously and in a typical dynamic website
 - things like the markup language or the template engine somewhat pluggable if i change my opinion on those, nothing designed around specifics of one single implementation
-- no templates, static stuff or anything in engine repo but all content in site repo
+- no templates, static stuff or anything in engine but all content in site repo
 - some content written in a markup language, rendered to html
 - some static content which does not get modified during compilation, just copied (need magic for thumbnails)
 - same content in multiple languages, linked together
@@ -43,12 +44,13 @@ random details
 --------------
 
 - some "front matter" yaml metadata on each content source to specify layout type (blog/category/...), bools like published/draft, categories this belongs in, deprecated tags from old site, post date etc.
+- also maybe a global metadata file to contain things like page source links to github or whatever unless possible to trick with templates only?
 - link to source repo in each compiled page
 - pagination starts from the earliest page so urls don't change, most recent page number is the largest
   - dynamically generated pages, like with pagination, either need a config file or metadata in the page that gets paginated
   - metadata in index: pass the start index to the template, specify pagination url in front matter
   - alternatively in page.html (or similar), not the front welcome page anymore, i guess this is nice and explicit
-- whole site read into memory first and parsed to get complete collections, then able to render those as listings by date/tag/category/language/...
+- whole site read into memory first and parsed to get complete groups, then able to render those as listings by date/tag/category/language/...
 - blog categories in separate files, rendered to listings with description of the category
 - no template tags in content at all to keep things orthogonal, whole source is just data compiled into a single content block in the template
   - source data doesn't know which template system is used
@@ -61,12 +63,13 @@ site layout
 -----------
 
 - trivial multilingual support by unique urls; link translations to original url in source metadata
-- / front page like previously, display latest posts paginated /pages/N or /older/N
+- / front page like previously
+- /pages/N/ display latest posts paginated, like previously with ?page=x
 - /yyyy/mm/dd/post/ like now, but without global sidebar bullshit
-- /category/name/ to describe this category and list all posts, paginated
+- /category/name/, /category/name/N/ to describe this category and list all posts, paginated
 - /category/ to list all categories
-- /archive/ just as the old sidebar, year/month list of posts
-- /about/ and other ordinary non-post pages visible as-is
+- /archive/ just as the old sidebar, plain year/month list of posts
+- /about/ and other ordinary non-post pages visible as-is with no other magic
 - each shortened blog (first paragraph) in listings to contain a selected picture if available
 - maybe display a separate lead paragraph instead of just the first paragraph in lists of posts
 
@@ -77,6 +80,7 @@ content type
 - optional extra data for template context in source metadata, if something else than title and content needed (title parsed from the first markup header probably)
 - super simple to write so it's easy to just write the damn blog
 - per-blogentry media, or do i want a global arbitrary per-site media storage with some magic to include any of those too?
+- template metadata substitutes title if none available in the content for nearly empty pages that have most of their content in templates (like a blog archive)
 
 
 content hierarchy

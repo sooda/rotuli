@@ -1,0 +1,15 @@
+{% extends "base-en.html" %}
+{% block content %}
+	{{ content }}
+
+	<ul>
+		{% for year, by_year in groups.blog | groupby("date.year") %}
+			<li><a href="/{{ year }}/">{{ year }}</a> ({{ length(by_year) }})<ul>
+				{% for month, by_month in by_year | groupby("date.month") %}
+					<li><a href="/{{ year }}/{{ month }}/">{{ year }}-{{ month }}</a> ({{ length(by_month) }})</li>
+				{% endfor %}
+			</ul></li>
+		{% endfor %}
+	</ul>
+	<p>{{ length(groups.blog) }} yhteensä</p>
+{% endblock content %}

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="{% block lang %}{% endblock lang %}">
+<head>
+	<meta charset="UTF-8">
+	<title>{% block title %}{% endblock %}</title>
+	<link rel="stylesheet" type="text/css" href="/css/main.css">
+	<link rel="alternate" type="application/rss+xml" href="/rss.xml">
+</head>
+<body>
+	<h1><a href="/">{% block headline %}{% endblock headline %}</a></h1>
+	<p>{% block tagline %}{% endblock tagline %}</p>
+	<ul id="navibar">
+		{% block navibar %}{% endblock navibar %}
+		<li><a href="/rss.xml">rss</a></li>
+	</ul>
+	<div id="content">
+		{% block content %}{% endblock content %}
+	</div>
+	<div id="sourcebox">
+		{% block sourcebox %}{% endblock sourcebox %}
+	</div>
+	<div id="aboutbox">
+		{% block aboutbox %}{% endblock aboutbox %}
+	</div>
+</body>
+</html>
+

@@ -1,0 +1,23 @@
+{% extends "base-en.html" %}
+{% block content %}
+	{{ content }}
+
+	XXX maybe just specify pagination numbers in front matter, to generate a number of pages, and then read that page id here?
+	XXX groups.blog.sort = date to specify sort key that has to be found in the metadata?
+	{% set pager = rotulus.paginate(groups.blog[True]|sort-by-date-maybe, 7, 3) %}
+	{% for page in pager.current.pages %}
+		{% include "postpreview-en.html" %}
+	{% endfor %}
+
+	<p>
+		{% if pager.previous %}<a href="/posts/{{ pager.previous }}/">older</a>{% endif %} |
+		{% for num in pager.range %}
+			{% if num == pager.current %}
+				{{ num }}
+			{% else %}
+				<a href="/posts/{{ num }}/">{{ num }}</a>
+			{% endif %}
+		{% endfor %}
+		| {% if pager.next %}<a href="/posts/{{ pager.next }}/">newer</a>{% endif %}
+	</p>
+{% endblock content %}

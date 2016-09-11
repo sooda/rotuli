@@ -1,0 +1,9 @@
+{% extends "base-fi.html" %}
+{% block content %}
+	{{ content }}
+
+	{% set prev = groups.category.previous %}
+	{% if prev %}aiempi juttu: <a href="{{ prev.url }}">{{ prev.title }}</a>{% endif %}
+	{% set next = groups.category.next %}
+	{% if next %}seuraava juttu: <a href="{{ next.url }}">{{ next.title }}</a>{% endif %}
+{% endblock content %}

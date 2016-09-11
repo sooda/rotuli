@@ -1,0 +1,10 @@
+{% extends "base-en.html" %}
+{% block content %}
+	{{ content }}
+
+	<ul>
+		{% for category, by_category in groups.blog | map(category != "") | groupby("category") | sort %}
+			<li><a href="/kategoriat/{{ category }}/">{{ category }}</a> ({{ length(by_category) }})</li>
+		{% endfor %}
+	</ul>
+{% endblock content %}
