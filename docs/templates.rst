@@ -14,7 +14,6 @@ Some of the metadata provided by you for every page is special:
 * original: the url of this page in its original language, when this page is a translation in another language. Either absolute if begins with a slash or relative. TODO source or dest path?
 * sort: if provided, marks by name the metadata key to be used to sort this group by default (XXX for what group? and in every post? nope, just the first one?)
 * no_directory: don't make a directory for this page with the auto-index.html feature. just strip the markup extension and generate in-place url (e.g., rss.xml.rst)
-* title: overrides one found in the content markup, if it has one (XXX not necessary?)
 
 Anything else is passed to the template in the context with no special handling.
 The special ones are included, too.
