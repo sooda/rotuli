@@ -1,2 +1,5 @@
 *.sw[pon]
 *.vis
+
+Cargo.lock
+target/

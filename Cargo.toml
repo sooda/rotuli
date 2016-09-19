@@ -1,0 +1,8 @@
+[package]
+
+name = "rotulus"
+version = "0.0.1"
+authors = ["Konsta Hölttä <sooda@iki.fi>"]
+
+[dependencies]
+glob = "*"
