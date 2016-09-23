@@ -6,3 +6,4 @@ authors = ["Konsta Hölttä <sooda@iki.fi>"]
 
 [dependencies]
 glob = "*"
+yaml-rust = "*"
