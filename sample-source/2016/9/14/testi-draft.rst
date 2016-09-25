@@ -1,6 +1,6 @@
 template: post-fi.html
-draft: yes
-blog: yes
+draft: true
+blog: true
 language: fi
 
 ja tätä ei piirretä

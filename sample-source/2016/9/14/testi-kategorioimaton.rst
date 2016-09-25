@@ -1,5 +1,5 @@
 template: post-fi.html
-blog: yes
+blog: true
 language: fi
 
 tittidii tattadaa

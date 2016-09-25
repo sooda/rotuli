@@ -13,7 +13,7 @@ Some of the metadata provided by you for every page is special:
 * template: the template used for rendering this page, read from the "templates" directory. If this key doesn't exist, "default.html" is used.
 * original: the url of this page in its original language, when this page is a translation in another language. Either absolute if begins with a slash or relative. TODO source or dest path?
 * sort: if provided, marks by name the metadata key to be used to sort this group by default (XXX for what group? and in every post? nope, just the first one?)
-* no_directory: don't make a directory for this page with the auto-index.html feature. just strip the markup extension and generate in-place url (e.g., rss.xml.rst)
+* url_as_is: don't make a directory for this page with the automatic index.html feature. just strip the markup extension and generate in-place url (e.g., rss.xml.rst)
 
 Anything else is passed to the template in the context with no special handling.
 The special ones are included, too.

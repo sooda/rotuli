@@ -1,6 +1,6 @@
 template: post-fi.html
 language: fi
-blog: yes
+blog: true
 kategoria: [elukat, kielitesti ja monta kategoriaa]
 
 oispa koiranpentu
