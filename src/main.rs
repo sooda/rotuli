@@ -6,8 +6,9 @@ use std::env;
 use std::path::{Path, PathBuf};
 use std::fs::File;
 use std::io::Read;
-use yaml_rust::yaml::{Yaml,Hash,YamlLoader};
-use std::rc::Rc;
+use yaml_rust::yaml::{Yaml, Hash, YamlLoader};
+use std::rc::{Rc, Weak};
+use std::cell::RefCell;
 use std::collections::BTreeSet;
 use std::iter::FromIterator;
 use std::fmt;
@@ -52,21 +53,21 @@ impl Metadata {
 }
 
 //#[derive(Debug)]
-struct Group<'a> {
+struct Group {
     name: String,
-    pages: Vec<&'a Page>,
+    pages: Vec<Weak<Page>>,
 }
 
-impl<'a> Group<'a> {
-    fn new(name: &str, pages: Vec<&'a Page>) -> Group<'a> {
+impl Group {
+    fn new(name: &str, pages: Vec<Weak<Page>>) -> Self {
         Group { name: name.to_owned(), pages: pages }
     }
 }
 
-impl<'a> fmt::Debug for Group<'a> {
+impl<'a> fmt::Debug for Group {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Group {{ name: {}, pages: {:?} }}", self.name,
-               self.pages.iter().map(|x| &x.path).collect::<Vec<_>>())
+               self.pages.iter().map(|x| x.upgrade().unwrap().path.to_owned()).collect::<Vec<_>>())
     }
 }
 
@@ -76,7 +77,8 @@ struct Page {
     content: String,
     path: PathBuf,
     url: String,
-    //groups: Vec<Rc<Group>>,
+    // filled after initial page construction
+    groups: Vec<Weak<Group>>,
 }
 
 fn read_file(p: &Path) -> String {
@@ -111,7 +113,7 @@ fn make_url(path: &Path, as_is: bool) -> String {
 
 impl Page {
     // all have a parent directory and a file, from discover_source constraints
-    fn from_disk(path: &PathBuf) -> Page {
+    fn from_disk(path: &PathBuf) -> Self {
         let data = read_file(path);
         let split_pos = data.find("\n\n").expect(&format!(
                 "Missing metadata separator in {}", path.to_string_lossy()));
@@ -126,7 +128,7 @@ impl Page {
             content: content.to_string(),
             path: path.clone(),
             url: url,
-            //groups: vec![],
+            groups: vec![],
         }
     }
     fn output(&self, path: &PathBuf) {
@@ -143,23 +145,41 @@ fn discover_source(pathname: &str) -> Vec<PathBuf> {
     pathbufs
 }
 
-fn pages_by_key<'a>(pages: &'a Vec<Page>, name: &str) -> Vec<&'a Page> {
-    pages.iter().filter(|p| p.metadata.contains_key(name)).collect()
+fn pages_by_key<'a>(pages: &'a Vec<Rc<Page>>, name: &str) -> Vec<Weak<Page>> {
+    pages.iter().filter(|p| p.metadata.contains_key(name)).map(Rc::downgrade).collect()
 }
 
+struct Site {
+    pages: Vec<Rc<Page>>,
+    groups: Vec<Rc<Group>>,
+}
+
+impl Site {
+    fn new(dir: &str) -> Self {
+        let srcpaths = discover_source(dir);
+        let pages: Vec<_> = srcpaths.iter().map(Page::from_disk).map(Rc::new).collect();
+        for p in &pages {
+            let b = &p.metadata.get("blog").unwrap_or(&Yaml::Boolean(false)).as_bool().unwrap();
+            println!("{:?}", p);
+            println!("blog {:?} {:?}", p.metadata.get("blog"), b);
+            println!("bloggity {:?}", p.metadata.get("bloggity"));
+        }
+        let mut site = Site { pages: pages, groups: vec![] };
+        let group_names = BTreeSet::from_iter(site.pages.iter().map(|p| p.metadata.keys())
+            .fold(vec![], |mut tot, key| { tot.extend(key); tot }));
+        site.groups = group_names.iter().map(
+            |key| Group::new(key, pages_by_key(&site.pages, key))).map(Rc::new).collect();
+
+        site
+    }
+}
 
 fn main() {
     let dir = &env::args().nth(1).unwrap();
-    let srcpaths = discover_source(dir);
-    let pages: Vec<_> = srcpaths.iter().map(Page::from_disk).collect();
-    for p in &pages {
-        let b = &p.metadata.get("blog").unwrap_or(&Yaml::Boolean(false)).as_bool().unwrap();
+    let site = Site::new(dir);
+    println!("{:?}", site.groups);
+
+    for p in &site.pages {
         println!("{:?}", p);
-        println!("blog {:?} {:?}", p.metadata.get("blog"), b);
-        println!("bloggity {:?}", p.metadata.get("bloggity"));
     }
-    let group_names = BTreeSet::from_iter(pages.iter().map(|p| p.metadata.keys())
-        .fold(vec![], |mut tot, i| { tot.extend(i); tot }));
-    let groups: Vec<_> = group_names.iter().map(|key| Group::new(key, pages_by_key(&pages, key))).collect();
-    println!("{:?}", groups);
 }
