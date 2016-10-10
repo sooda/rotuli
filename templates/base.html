@@ -7,8 +7,10 @@
 	<link rel="alternate" type="application/rss+xml" href="/rss.xml">
 </head>
 <body>
-	<h1><a href="/">{% block headline %}{% endblock headline %}</a></h1>
-	<p>{% block tagline %}{% endblock tagline %}</p>
+	<header>
+		<h1><a href="/">{% block headline %}{% endblock headline %}</a></h1>
+		<p>{% block tagline %}{% endblock tagline %}</p>
+	</header>
 	<ul id="navibar">
 		{% block navibar %}{% endblock navibar %}
 		<li><a href="/rss.xml">rss</a></li>
@@ -16,12 +18,14 @@
 	<div id="content">
 		{% block content %}{% endblock content %}
 	</div>
-	<div id="sourcebox">
-		{% block sourcebox %}{% endblock sourcebox %}
-	</div>
-	<div id="aboutbox">
-		{% block aboutbox %}{% endblock aboutbox %}
-	</div>
+	<footer>
+		<div id="sourcebox">
+			{% block sourcebox %}{% endblock sourcebox %}
+		</div>
+		<div id="aboutbox">
+			{% block aboutbox %}{% endblock aboutbox %}
+		</div>
+	</footer>
 </body>
 </html>
 

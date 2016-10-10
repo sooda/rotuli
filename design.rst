@@ -13,10 +13,12 @@ good looking samples
 
 - Nice layout and good source structure http://lucumr.pocoo.org https://github.com/mitsuhiko/lucumr https://github.com/mitsuhiko/rstblog/tree/master/rstblog
 - http://stevelosh.com
-- per-post images, and i like the colors here http://www.windytan.com/ (todo: diy background with random halton dots or something?)
+- per-post images, and i like the colors here http://www.windytan.com/ (todo: diy background with random halton dots or something? gvim-ish colorscheme?)
 - http://gitready.com
 - http://ithare.com/
 - https://fgiesen.wordpress.com, not so minimal tho but the small number of categories for the navi bar is nice
+- some medium.com blogs
+- colorscheme http://featherweightmusings.blogspot.fi/ but i won't use separate backgrounds like that
 
 
 high level requirements
