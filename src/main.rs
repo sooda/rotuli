@@ -7,7 +7,6 @@ use std::path::{Path, PathBuf};
 use std::fs::File;
 use std::io::Read;
 use yaml_rust::yaml::{Yaml, Hash, YamlLoader};
-use std::rc::{Rc, Weak};
 use std::cell::RefCell;
 use std::collections::BTreeSet;
 use std::iter::FromIterator;
@@ -52,14 +51,17 @@ impl Metadata {
     }
 }
 
+#[derive(Debug, PartialEq)]
+struct PageReference(usize);
+
 //#[derive(Debug)]
 struct Group {
     name: String,
-    pages: Vec<Weak<Page>>,
+    pages: Vec<PageReference>,
 }
 
 impl Group {
-    fn new(name: &str, pages: Vec<Weak<Page>>) -> Self {
+    fn new(name: &str, pages: Vec<PageReference>) -> Self {
         Group { name: name.to_owned(), pages: pages }
     }
 }
@@ -67,9 +69,12 @@ impl Group {
 impl<'a> fmt::Debug for Group {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Group {{ name: {}, pages: {:?} }}", self.name,
-               self.pages.iter().map(|x| x.upgrade().unwrap().path.to_owned()).collect::<Vec<_>>())
+               self.pages)
     }
 }
+
+#[derive(Debug, PartialEq)]
+struct GroupReference(usize);
 
 #[derive(Debug)]
 struct Page {
@@ -78,7 +83,7 @@ struct Page {
     path: PathBuf,
     url: String,
     // filled after initial page construction
-    groups: Vec<Weak<Group>>,
+    groups: Vec<GroupReference>,
 }
 
 fn read_file(p: &Path) -> String {
@@ -145,41 +150,71 @@ fn discover_source(pathname: &str) -> Vec<PathBuf> {
     pathbufs
 }
 
-fn pages_by_key<'a>(pages: &'a Vec<Rc<Page>>, name: &str) -> Vec<Weak<Page>> {
-    pages.iter().filter(|p| p.metadata.contains_key(name)).map(Rc::downgrade).collect()
+fn pages_by_key(pages: &Vec<Page>, name: &str) -> Vec<PageReference> {
+    pages.iter().enumerate().filter(|&(_, p)| p.metadata.contains_key(name)).map(|(i, _)| PageReference(i)).collect()
 }
 
 struct Site {
-    pages: Vec<Rc<Page>>,
-    groups: Vec<Rc<Group>>,
+    pages: Vec<Page>,
+    groups: Vec<Group>,
 }
 
 impl Site {
     fn new(dir: &str) -> Self {
+        // Load source data as pages with just metadata properly initialized
         let srcpaths = discover_source(dir);
-        let pages: Vec<_> = srcpaths.iter().map(Page::from_disk).map(Rc::new).collect();
+        let pages: Vec<_> = srcpaths.iter().map(Page::from_disk).collect();
+
+        // debug notes
         for p in &pages {
             let b = &p.metadata.get("blog").unwrap_or(&Yaml::Boolean(false)).as_bool().unwrap();
             println!("{:?}", p);
             println!("blog {:?} {:?}", p.metadata.get("blog"), b);
             println!("bloggity {:?}", p.metadata.get("bloggity"));
         }
+
+        // Move pages to site, construct groups
         let mut site = Site { pages: pages, groups: vec![] };
         let group_names = BTreeSet::from_iter(site.pages.iter().map(|p| p.metadata.keys())
             .fold(vec![], |mut tot, key| { tot.extend(key); tot }));
         site.groups = group_names.iter().map(
-            |key| Group::new(key, pages_by_key(&site.pages, key))).map(Rc::new).collect();
+            |key| Group::new(key, pages_by_key(&site.pages, key))).collect();
+
+        // Transpose groups (lists of pages by key) into their links (lists of groups by pages
+        // (i.e., lists of keys))
+        let mut pagegroups: Vec<Vec<GroupReference>> = vec![];
+        for p in 0..site.pages.len() {
+            pagegroups.push(site.groups_for(PageReference(p)));
+        }
+        for (p, gs) in site.pages.iter_mut().zip(pagegroups.into_iter()) {
+            p.groups = gs;
+        }
 
         site
+    }
+
+    fn groups_for(&self, page: PageReference) -> Vec<GroupReference> {
+        self.pages[page.0].metadata.keys().iter().map(|k| self.get_groupi(k)).collect()
+        //self.groups.iter().enumerate().filter(|&(i, g)| g.pages.contains(&page)).map(|(i, g)| GroupReference(i)).collect()
+    }
+
+    fn get_group(&self, name: &str) -> &Group {
+        self.groups.iter().find(|x| x.name == name).unwrap()
+    }
+    fn get_groupi(&self, name: &str) -> GroupReference {
+        GroupReference(self.groups.iter().enumerate().find(|&(_, x)| x.name == name).unwrap().0)
     }
 }
 
 fn main() {
     let dir = &env::args().nth(1).unwrap();
     let site = Site::new(dir);
-    println!("{:?}", site.groups);
 
-    for p in &site.pages {
+    for g in site.groups.iter().enumerate() {
+        println!("{:?}", g);
+    }
+
+    for p in site.pages.iter().enumerate() {
         println!("{:?}", p);
     }
 }
