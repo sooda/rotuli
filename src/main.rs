@@ -81,9 +81,10 @@ struct Page {
     metadata: Metadata,
     content: String,
     path: PathBuf,
-    url: String,
+    url: PathBuf,
     // filled after initial page construction
     groups: Vec<GroupReference>,
+    translations: Vec<PageReference>
 }
 
 fn read_file(p: &Path) -> String {
@@ -94,51 +95,66 @@ fn read_file(p: &Path) -> String {
     s
 }
 
-// a/b/index.rst -> a/b/
-// a/b/c.d.rst -> a/b/c.d/ or a/b/c.d
-fn make_url(path: &Path, as_is: bool) -> String {
-    if path.ends_with("index.rst") {
-        path.parent().unwrap().to_str().unwrap().to_string() + "/"
+fn make_url(path: &Path, root: &Path) -> PathBuf {
+    let formatted = if path.ends_with("index.rst") {
+        // just strip the index part off
+        path.parent().unwrap().to_path_buf()
     } else {
-        // strip extension, add / unless as_is
-        path.parent().unwrap().join(path.file_stem().unwrap()).
-            to_str().unwrap().to_string() +
-            if as_is { "" } else { "/" }
-    }
-    /*
-    if path.ends_with("/index.rst") {
-        path[..path.len() - "index.rst".len()]
-    } else if as_is {
-        path[..path.len() - ".rst".len()]
-    } else {
-        path[..path.len() - ".rst".len()] + "/"
-    }
-    */
+        // strip markup extension, append back to the directory
+        path.parent().unwrap().join(path.file_stem().unwrap())
+    };
+    let child = formatted.strip_prefix(root).unwrap();
+
+    Path::new("/").join(child)
 }
 
 impl Page {
     // all have a parent directory and a file, from discover_source constraints
-    fn from_disk(path: &PathBuf) -> Self {
+    fn from_disk(path: &Path, root: &Path) -> Self {
         let data = read_file(path);
         let split_pos = data.find("\n\n").expect(&format!(
                 "Missing metadata separator in {}", path.to_string_lossy()));
         let metadata = Metadata::from_string(&data[..split_pos]);
         let content = &data[split_pos..];
-        // ughh
-        let as_is = &metadata.get(MAGIC_META_URL_AS_IS).unwrap_or(&Yaml::Boolean(false)).as_bool().unwrap();
-        let url = make_url(path, *as_is);
+        let url = make_url(path, root);
 
         Page {
             metadata: metadata,
             content: content.to_string(),
-            path: path.clone(),
+            path: path.to_path_buf(),
             url: url,
             groups: vec![],
+            translations: vec![]
         }
     }
+
+    fn original_url(&self) -> Option<PathBuf> {
+        self.metadata.get("original").map(|meta| {
+            let orig = Path::new(meta.as_str().unwrap());
+            if orig.starts_with("/") {
+                orig.to_path_buf()
+            } else {
+                self.url.parent().unwrap().join(orig)
+            }
+        })
+    }
+
+    fn display_url(&self) -> String {
+        let as_is = &self.metadata.get(MAGIC_META_URL_AS_IS)
+            .unwrap_or(&Yaml::Boolean(false)).as_bool().unwrap();
+
+        if self.path.ends_with("index.rst") || !as_is {
+            self.url.to_str().unwrap().to_owned() + "/"
+        } else {
+            self.url.to_str().unwrap().to_owned()
+        }
+    }
+
     fn output(&self, path: &PathBuf) {
+        /*
         let filename = if self.url.chars().nth(0).unwrap() == '/' {
             self.url.clone() + "index.html" } else { self.url.clone() };
+        */
     }
 }
 
@@ -163,7 +179,8 @@ impl Site {
     fn new(dir: &str) -> Self {
         // Load source data as pages with just metadata properly initialized
         let srcpaths = discover_source(dir);
-        let pages: Vec<_> = srcpaths.iter().map(Page::from_disk).collect();
+        let dir = Path::new(dir);
+        let pages: Vec<_> = srcpaths.iter().map(|x| Page::from_disk(x, dir)).collect();
 
         // debug notes
         for p in &pages {
@@ -171,6 +188,8 @@ impl Site {
             println!("{:?}", p);
             println!("blog {:?} {:?}", p.metadata.get("blog"), b);
             println!("bloggity {:?}", p.metadata.get("bloggity"));
+            println!("path {:?}", p.path);
+            println!("url {:?} {:?}", p.url, p.display_url());
         }
 
         // Move pages to site, construct groups
@@ -182,12 +201,21 @@ impl Site {
 
         // Transpose groups (lists of pages by key) into their links (lists of groups by pages
         // (i.e., lists of keys))
-        let mut pagegroups: Vec<Vec<GroupReference>> = vec![];
-        for p in 0..site.pages.len() {
-            pagegroups.push(site.groups_for(PageReference(p)));
-        }
+        let mut pagegroups = (0..site.pages.len()).map(
+            |pi| site.groups_for(PageReference(pi))).collect::<Vec<_>>();
+
         for (p, gs) in site.pages.iter_mut().zip(pagegroups.into_iter()) {
             p.groups = gs;
+        }
+
+        // refs to originals from the metadata key for each translated page, as Options
+        {
+            let orig_id_by_page = |p: &Page| {
+                p.original_url().map(|meta_orig| site.page_by_url(meta_orig.to_str().unwrap()))
+            };
+
+            let originals = site.pages.iter().map(orig_id_by_page).collect::<Vec<_>>();
+            // ... and build cross-ref db, TODO
         }
 
         site
@@ -204,11 +232,17 @@ impl Site {
     fn get_groupi(&self, name: &str) -> GroupReference {
         GroupReference(self.groups.iter().enumerate().find(|&(_, x)| x.name == name).unwrap().0)
     }
+    fn page_by_url(&self, url: &str) -> &Page {
+        println!("url? x{}x", url);
+        self.pages.iter().find(|x| x.url.to_str().unwrap() == url).unwrap()
+    }
 }
 
 fn main() {
     let dir = &env::args().nth(1).unwrap();
     let site = Site::new(dir);
+
+    println!("--- yiss! ---");
 
     for g in site.groups.iter().enumerate() {
         println!("{:?}", g);
