@@ -7,7 +7,6 @@ use std::path::{Path, PathBuf};
 use std::fs::File;
 use std::io::Read;
 use yaml_rust::yaml::{Yaml, Hash, YamlLoader};
-use std::cell::RefCell;
 use std::collections::BTreeSet;
 use std::iter::FromIterator;
 use std::fmt;
@@ -51,7 +50,7 @@ impl Metadata {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 struct PageReference(usize);
 
 //#[derive(Debug)]
@@ -73,15 +72,15 @@ impl<'a> fmt::Debug for Group {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 struct GroupReference(usize);
 
 #[derive(Debug)]
 struct Page {
-    metadata: Metadata,
-    content: String,
     path: PathBuf,
     url: PathBuf,
+    metadata: Metadata,
+    content: String,
     // filled after initial page construction
     groups: Vec<GroupReference>,
     translations: Vec<PageReference>
@@ -138,6 +137,9 @@ impl Page {
             }
         })
     }
+    fn language(&self) -> Option<&str> {
+        self.metadata.get("language").map(|meta| meta.as_str().unwrap())
+    }
 
     fn display_url(&self) -> String {
         let as_is = &self.metadata.get(MAGIC_META_URL_AS_IS)
@@ -183,6 +185,7 @@ impl Site {
         let pages: Vec<_> = srcpaths.iter().map(|x| Page::from_disk(x, dir)).collect();
 
         // debug notes
+        /*
         for p in &pages {
             let b = &p.metadata.get("blog").unwrap_or(&Yaml::Boolean(false)).as_bool().unwrap();
             println!("{:?}", p);
@@ -190,7 +193,9 @@ impl Site {
             println!("bloggity {:?}", p.metadata.get("bloggity"));
             println!("path {:?}", p.path);
             println!("url {:?} {:?}", p.url, p.display_url());
+            println!("language {:?}", p.language());
         }
+        */
 
         // Move pages to site, construct groups
         let mut site = Site { pages: pages, groups: vec![] };
@@ -201,40 +206,62 @@ impl Site {
 
         // Transpose groups (lists of pages by key) into their links (lists of groups by pages
         // (i.e., lists of keys))
-        let mut pagegroups = (0..site.pages.len()).map(
+        let pagegroups = (0..site.pages.len()).map(
             |pi| site.groups_for(PageReference(pi))).collect::<Vec<_>>();
 
         for (p, gs) in site.pages.iter_mut().zip(pagegroups.into_iter()) {
             p.groups = gs;
         }
 
-        // refs to originals from the metadata key for each translated page, as Options
+        // build translation cross-references for pages that link to originals
+        let mut translations: Vec<Vec<PageReference>> = vec![vec![]; site.pages.len()];
         {
             let orig_id_by_page = |p: &Page| {
-                p.original_url().map(|meta_orig| site.page_by_url(meta_orig.to_str().unwrap()))
+                p.original_url().map(|url| site.page_by_url(url.to_str().unwrap()))
             };
 
-            let originals = site.pages.iter().map(orig_id_by_page).collect::<Vec<_>>();
-            // ... and build cross-ref db, TODO
+            // first, let the sources (original pages) know there's pages at the other end of the
+            // edges of this undirected graph
+            let mut from_origs: Vec<Vec<PageReference>> = vec![vec![]; site.pages.len()];
+            for (i, p) in site.pages.iter().enumerate() {
+                let orig_id = orig_id_by_page(p);
+                match orig_id {
+                    Some(id) => from_origs[id.0].push(PageReference(i)),
+                    None => ()
+                };
+            }
+            // then, flip edges to the other direction by copying the lists; also record edges from
+            // origs to origs so the translation lists are the same for every translated page
+            for (orig_i, dests) in from_origs.iter_mut().enumerate() {
+                if !dests.is_empty() { dests.push(PageReference(orig_i)); }
+                for pageref in dests.iter() {
+                    // each page has just one original, so the original's link list is complete
+                    translations[pageref.0] = dests.clone();
+                }
+            }
+        }
+        for (p, ts) in site.pages.iter_mut().zip(translations.into_iter()) {
+            p.translations = ts;
         }
 
         site
     }
 
+    // TODO cleanup & safety:
+    // fn enumerate_pages() -> ... { self.pages.iter.enumerate() returning PageReference instead of usize
+    // fn enumerate_groups() -> ..
+
     fn groups_for(&self, page: PageReference) -> Vec<GroupReference> {
-        self.pages[page.0].metadata.keys().iter().map(|k| self.get_groupi(k)).collect()
+        self.pages[page.0].metadata.keys().iter().map(|k| self.get_group(k)).collect()
         //self.groups.iter().enumerate().filter(|&(i, g)| g.pages.contains(&page)).map(|(i, g)| GroupReference(i)).collect()
     }
 
-    fn get_group(&self, name: &str) -> &Group {
-        self.groups.iter().find(|x| x.name == name).unwrap()
-    }
-    fn get_groupi(&self, name: &str) -> GroupReference {
+    fn get_group(&self, name: &str) -> GroupReference {
         GroupReference(self.groups.iter().enumerate().find(|&(_, x)| x.name == name).unwrap().0)
     }
-    fn page_by_url(&self, url: &str) -> &Page {
-        println!("url? x{}x", url);
-        self.pages.iter().find(|x| x.url.to_str().unwrap() == url).unwrap()
+    fn page_by_url(&self, url: &str) -> PageReference {
+        PageReference(self.pages.iter().enumerate().find(
+                |&(_, x)| x.url.to_str().unwrap() == url).unwrap().0)
     }
 }
 
