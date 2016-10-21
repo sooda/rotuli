@@ -1,11 +1,20 @@
+#![feature(proc_macro)]
+
 extern crate glob;
 extern crate yaml_rust;
+extern crate tera;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
 
 use glob::glob;
+
+use tera::{Tera, Context};
+
 use std::env;
 use std::path::{Path, PathBuf};
-use std::fs::File;
-use std::io::Read;
+use std::fs::{File, create_dir_all};
+use std::io::{Read, Write};
 use yaml_rust::yaml::{Yaml, Hash, YamlLoader};
 use std::collections::BTreeSet;
 use std::iter::FromIterator;
@@ -94,6 +103,12 @@ fn read_file(p: &Path) -> String {
     s
 }
 
+fn write_file(p: &Path, s: &str) {
+    create_dir_all(p.parent().unwrap()).unwrap();
+    let mut f = File::create(p).unwrap();
+    f.write_all(s.as_bytes()).unwrap();
+}
+
 fn make_url(path: &Path, root: &Path) -> PathBuf {
     let formatted = if path.ends_with("index.rst") {
         // just strip the index part off
@@ -152,6 +167,21 @@ impl Page {
         }
     }
 
+    fn url_file(&self) -> PathBuf {
+        let as_is = &self.metadata.get(MAGIC_META_URL_AS_IS)
+            .unwrap_or(&Yaml::Boolean(false)).as_bool().unwrap();
+
+        if *as_is {
+            self.url.strip_prefix("/").unwrap().to_path_buf()
+        } else {
+            self.url.strip_prefix("/").unwrap().join("index.html")
+        }
+    }
+
+    fn template_name(&self) -> &str {
+        self.metadata.get("template").unwrap().as_str().unwrap()
+    }
+
     fn output(&self, path: &PathBuf) {
         /*
         let filename = if self.url.chars().nth(0).unwrap() == '/' {
@@ -172,7 +202,11 @@ fn pages_by_key(pages: &Vec<Page>, name: &str) -> Vec<PageReference> {
     pages.iter().enumerate().filter(|&(_, p)| p.metadata.contains_key(name)).map(|(i, _)| PageReference(i)).collect()
 }
 
+struct TemplateContext {
+}
+
 struct Site {
+    directory: PathBuf,
     pages: Vec<Page>,
     groups: Vec<Group>,
 }
@@ -198,7 +232,7 @@ impl Site {
         */
 
         // Move pages to site, construct groups
-        let mut site = Site { pages: pages, groups: vec![] };
+        let mut site = Site { directory: dir.to_path_buf(), pages: pages, groups: vec![] };
         let group_names = BTreeSet::from_iter(site.pages.iter().map(|p| p.metadata.keys())
             .fold(vec![], |mut tot, key| { tot.extend(key); tot }));
         site.groups = group_names.iter().map(
@@ -263,11 +297,48 @@ impl Site {
         PageReference(self.pages.iter().enumerate().find(
                 |&(_, x)| x.url.to_str().unwrap() == url).unwrap().0)
     }
+
+    fn render(&self, tera: &Tera, output_dir: &str) {
+        #[derive(Serialize)]
+        struct PageContext {
+            prev: String,
+            next: String,
+            url: String,
+            title: String,
+        }
+
+        let output_dir = Path::new(output_dir);
+        for (i, p) in self.pages.iter().enumerate() {
+            if p.path.to_string_lossy() != "sample-source/2016/9/14/test-commit.rst" {
+            //if p.path.to_string_lossy() != "sample-source/index.rst" {
+            //if p.path.to_string_lossy() != "sample-source/eng.rst" {
+                println!("not render {:?} to {:?} using {}", p.path.to_string_lossy(), p.url_file(), p.template_name());
+                continue;
+            }
+            println!("render {:?} to {:?} using {}", p.path, p.url_file(), p.template_name());
+
+            let mut c = Context::new();
+            c.add("path", &"TODO path".to_owned());
+            c.add("content", &p.content);
+            c.add("prev", &PageContext { prev: "p".to_owned(), next: "n".to_owned(), url: "u".to_owned(), title: "t".to_owned() });
+            c.add("next", &PageContext { prev: "p".to_owned(), next: "n".to_owned(), url: "u".to_owned(), title: "t".to_owned() });
+
+            //let outfile = output_dir.join(p.url_file());
+            //write_file(&outfile, s);
+            //let s = tera.render(&("templates/".to_owned() + p.template_name()), c).unwrap();
+            let s = tera.render(p.template_name(), c).unwrap();
+
+            let outfile = output_dir.join(p.url_file());
+            write_file(&outfile, &s);
+        }
+    }
 }
 
 fn main() {
-    let dir = &env::args().nth(1).unwrap();
-    let site = Site::new(dir);
+    let source = &env::args().nth(1).unwrap();
+    let output = &env::args().nth(2).unwrap();
+    let site = Site::new(source);
+    let tera = Tera::new("templates2/**/*.html");
 
     println!("--- yiss! ---");
 
@@ -278,4 +349,6 @@ fn main() {
     for p in site.pages.iter().enumerate() {
         println!("{:?}", p);
     }
+
+    site.render(&tera, output);
 }

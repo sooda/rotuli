@@ -19,6 +19,7 @@ good looking samples
 - https://fgiesen.wordpress.com, not so minimal tho but the small number of categories for the navi bar is nice
 - some medium.com blogs
 - colorscheme http://featherweightmusings.blogspot.fi/ but i won't use separate backgrounds like that
+- https://hoverbear.org
 
 
 high level requirements

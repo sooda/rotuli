@@ -1,0 +1,9 @@
+{% extends "base-en.html" %}
+{% block content %}
+	{{ content }}
+
+	% set prev = groups.category.previous %}
+	% if prev %}older post: <a href="{{ prev.url }}">{{ prev.title }}</a>% endif %}
+	% set next = groups.category.next %}
+	% if next %}newer post: <a href="{{ next.url }}">{{ next.title }}</a>% endif %}
+{% endblock content %}
