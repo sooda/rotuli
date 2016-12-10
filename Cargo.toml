@@ -7,11 +7,7 @@ authors = ["Konsta Hölttä <sooda@iki.fi>"]
 [dependencies]
 glob = "*"
 yaml-rust = "*"
-tera = "0.3.1"
 tera = "*"
 serde_derive = "*"
 serde = "*"
 regex = "*"
-
-[replace]
-"tera:0.3.1" = { git = "file:///home/sooda/projects/code/tera" }
