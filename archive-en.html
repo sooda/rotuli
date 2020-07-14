@@ -1,0 +1,10 @@
+{% extends "base-en.html" %}
+{% block content %}
+	{{ content }}
+
+	// for yera, by_year in groups.blog|group_by read_meta("date.year") but the ".year" part is magic
+// read_meta("date")
+	{% for x in groups.blog | reverse %}
+	x
+	{% endfor %}
+{% endblock content %}
