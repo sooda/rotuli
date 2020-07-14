@@ -308,8 +308,10 @@ impl Site {
         }
 
         let output_dir = Path::new(output_dir);
-        for (i, p) in self.pages.iter().enumerate() {
-            if p.path.to_string_lossy() != "sample-source/2016/9/14/test-commit.rst" {
+        for (i, p) in self.pages.iter().filter(|p| p.metadata.contains_key("ok")).enumerate() {
+            println!("AAAA {:?}", p.metadata.contains_key("ok"));
+            println!("AAAA {:?}", p.metadata.get("ok"));
+            if false { // p.path.to_string_lossy() != "sample-source/2016/9/14/test-commit.rst" {
             //if p.path.to_string_lossy() != "sample-source/index.rst" {
             //if p.path.to_string_lossy() != "sample-source/eng.rst" {
                 println!("not render {:?} to {:?} using {}", p.path.to_string_lossy(), p.url_file(), p.template_name());
@@ -340,15 +342,19 @@ fn main() {
     let site = Site::new(source);
     let tera = Tera::new("templates2/**/*.html");
 
-    println!("--- yiss! ---");
+    println!("--- yiss! groups ---");
 
     for g in site.groups.iter().enumerate() {
         println!("{:?}", g);
     }
 
+    println!("--- yiss! pages ---");
+
     for p in site.pages.iter().enumerate() {
         println!("{:?}", p);
     }
+
+    println!("--- yiss! render ---");
 
     site.render(&tera, output);
 }

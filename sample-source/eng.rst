@@ -1,3 +1,4 @@
+ok: true
 template: base-en.html
 language: en
 original: /

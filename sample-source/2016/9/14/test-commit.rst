@@ -1,3 +1,4 @@
+ok: true
 template: post-en.html
 language: en
 # don't need to filter by this when listing blogs, just list all that contain the key "blog" in their metadata

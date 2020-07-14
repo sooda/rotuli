@@ -1,3 +1,4 @@
+ok: true
 template: base-fi.html
 language: fi
 

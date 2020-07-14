@@ -1,3 +1,4 @@
+ok: true
 template: post-fi.html
 language: fi
 blog: true
