@@ -11,9 +11,9 @@ metadata
 Some of the metadata provided by you for every page is special:
 
 * template: the template used for rendering this page, read from the "templates" directory. If this key doesn't exist, "default.html" is used.
-* original: the url of this page in its original language, when this page is a translation in another language. Either absolute if begins with a slash or relative. TODO source or dest path?
+* original: the url of this page in its original language, when this page is a translation in another language. Either absolute if begins with a slash or relative. TODO source or dest path? of course source?
 * language: a string depicting which language this page is written in; used in reading translations of pages in the template context
-* sort: if provided, marks by name the metadata key to be used to sort this group by default (XXX for what group? and in every post? nope, just the first one?)
+* sort: if provided, marks by name the metadata key to be used to sort this group by default (XXX for what group? and in every post? nope, just the first one?) no, does this make any sense? should sort by source path by default and then by something else if specified when listing pages in a template
 * url_as_is: don't make a directory for this page with the automatic index.html feature. just strip the markup extension and generate in-place url (e.g., rss.xml.rst)
 
 Anything else is passed to the template in the context with no special handling.
@@ -25,7 +25,7 @@ context
 
 The template context is page-specific; there is the metadata provided by you, and some "magic" variables that are different for each page.
 
-All metadata specified in the page is visible as attributes in the "meta" object. (XXX or just flatten out to globals?)
+All metadata specified in the page is visible as attributes in the "meta" object. (XXX or just flatten out to globals? eww no)
 Additionally, the actual content of a page is special, and exits as "content", with also "content_preview" containing the first paragraph.
 If you want to write a short preview yourself and use that in templates, it's fine too; use a string in the metadata for that.
 The document content is also parsed for the top-level heading, which exists as "title".
@@ -36,9 +36,10 @@ All of the pages are magically linked together: in each template you have access
 * url: the location of the page, as visible to the browser. ``you are <a href="{{ url }}">here</a>``
 * path: the location of the page, as parsed from the filesystem. ``source: github.com/yourname/blog/{{ path }}``
 * languages (XXX translations?): a dictionary of all versions of this page, keyed by the language. ``in english: <a href="{{ languages.en.url }}">``
-* groups: a dict of page lists that belong in a particular group specified in the metadata. XXX all keys in metadata specify a group, to make things simple? Then also drafts etc become groups, and: ``for i in groups.posts``
-* group: has pages as "previous", "current", "next" attributes for each group. ``previous page: <a href="{{ group.posts.previous.url }}">`` XXX merge with groups?
-* pager: pagination support, borrowed from django; don't confuse these pages with the web pages.
+* groups: a dict of page lists that belong in a particular group specified in the metadata. XXX all keys in metadata specify a group, to make things simple? Then also drafts etc become groups, and: ``for i in groups.post`` loops all that have ``post: (anything)`` (and only post: true makes sense to have)
+* group: has pages as "previous", "current", "next" attributes for each group. ``previous page: <a href="{{ group.post.previous.url }}">`` XXX merge with groups?
+* (not sure if need this | pager: pagination support, borrowed from django; don't confuse these pages with the web pages.)
+* inject_index: TODO
 
 
 context variable types

@@ -26,7 +26,7 @@ Detskuja voi käydä katsomassa suunnitteludokumentista_, jota en viitsi toistaa
 * servaus kapsilta_ eikä enää kotoa käsin
 * webserver-python/django-projekti muuttui offline-rust-työkaluksi generoimaan kaiken
 * kommentit häipyivät
-* tagit muuttuivat kategorioiksi
+* tagit muuttuivat kategorioiksi eli aihealueiksi; tageja kertyi ihan liikaa. Miksi näitä kutsuu on tosin vain semanttinen ero, mutta joka tapauksessa noiden lukumäärä väheni eikä lisää ole erityisemmin tulossa, koska tagien alla oli yksi tai kaksi tekstiä.
 * generointityökalu tukee useampaa kieltä
 
 .. _kapsilta: http://kapsi.fi
@@ -94,6 +94,8 @@ Toiminee opetteluprojektina itselleni; ehkä siistin tuota ajan kuluessa.
 
 vielä riittää töitä
 -------------------
+
+Jotain hassua poistui, kuten irkkistatsit ja piirtopöytä. TODO pälä pälä
 
 Nuo paste.dy.fi ja fpaste.dy.fi vaativat vielä tuon vanhan serverin djangoineen, eli ihan heti ei voi kärrätä kamaa romuttamolle (lue: otaniemeen jollekin hölmölle).
 Lisäksi serverillä pyörii lämpötilaloggeria ja muuta kivaa, jotka varmaan siirrän esim. raspille tms. pikkuserverille, joka ei vie juurikaan tilaa eikä metelöi.

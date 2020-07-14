@@ -6,6 +6,9 @@ Previously, I was planning to write this in Python, or to find one made in Pytho
 I guess Jekyll would be good enough, too, just quickly skimmed it.
 
 Here's some mixed things I want for the new blog and for the engine.
+"Hold on, let me overthink this."
+
+Not having special handling for blog posts that are going to be like 99% of the content is probably a biiig mistake in the long run, but oh gosh, a magic directory for "posts" or "content" simply doesn't *feel* right to me. Just don't want to separate text and images, for example.
 
 
 good looking samples
@@ -13,22 +16,26 @@ good looking samples
 
 - Nice layout and good source structure http://lucumr.pocoo.org https://github.com/mitsuhiko/lucumr https://github.com/mitsuhiko/rstblog/tree/master/rstblog
 - http://stevelosh.com
-- per-post images, and i like the colors here http://www.windytan.com/ (todo: diy background with random halton dots or something? gvim-ish colorscheme?)
+- per-post images, and i like the colors here http://www.windytan.com/ (todo: diy background with random halton dots or something? gvim-ish colorscheme? some cream white bg?)
 - http://gitready.com
 - http://ithare.com/
 - https://fgiesen.wordpress.com, not so minimal tho but the small number of categories for the navi bar is nice
 - some medium.com blogs
 - colorscheme http://featherweightmusings.blogspot.fi/ but i won't use separate backgrounds like that
 - https://hoverbear.org
+- https://ruudvanasseldonk.com/2016/11/30/zero-cost-abstractions
+- https://eev.ee/
+- https://subtlepatterns.com/ for repeating background pic
 
 
 high level requirements
 -----------------------
 
-- read plaintext git, no web ui bullshit
-- git post-commit hook to render stuff to html dir
+- source content hierarchy (structure) is pretty much identical to the generated url hierarchy
+- read plaintext git, no web ui bullshit, the "database" is files only
+- git post-commit hook to render stuff to html dir?
 - really generic, not so blog post centric although most content will be blogging
-- understand lists of things: categories, all posts, posts of a certain date range, posts in a certain category
+- understand lists of things: categories, all posts, posts of a certain date range, posts in a certain category, project pages that aren't blog posts
   - those generic "lists of things" for "for p in posts" or "in whatever" specified in site contents, not in engine
 - simple core and some module system to incrementally add things like image thumbnailer, an embedded video player, a source code highlighter or page comments
 - templates, not displayable as-is but used for compiling content into html, sort of like previously and in a typical dynamic website
