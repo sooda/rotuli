@@ -1,5 +1,6 @@
 {% extends "base-fi.html" %}
 {% block content %}
+äh, base-fi:n block-elementit eivät näy base.html:ssä. vaan jos ne laittaa tänne, ei taida tera olla vielä kunnossa kun toimii jinja2:ssa
 	{{ content | safe }}
 
 	{% if groups.category.prev %}aiempi juttu: <a href="{{ groups.category.prev.url }}">{{ groups.category.prev.title }}</a>{% endif %}
