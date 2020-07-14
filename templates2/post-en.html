@@ -1,6 +1,6 @@
 {% extends "base-en.html" %}
 {% block content %}
-	{{ content }}
+	{{ content | safe }}
 
 	% set prev = groups.category.previous %}
 	% if prev %}older post: <a href="{{ prev.url }}">{{ prev.title }}</a>% endif %}

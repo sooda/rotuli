@@ -1,5 +1,3 @@
-#![feature(proc_macro)]
-
 extern crate glob;
 extern crate yaml_rust;
 extern crate tera;
@@ -19,6 +17,7 @@ use yaml_rust::yaml::{Yaml, Hash, YamlLoader};
 use std::collections::BTreeSet;
 use std::iter::FromIterator;
 use std::fmt;
+use std::process::{Command, Stdio};
 
 // Metadata keys treated in a special way; could use strings in-place, but now they're in a single
 // place here for explicitness.
@@ -319,9 +318,17 @@ impl Site {
             }
             println!("render {:?} to {:?} using {}", p.path, p.url_file(), p.template_name());
 
+            let process = Command::new("./rstrender.py")
+                .stdin(Stdio::piped()).stdout(Stdio::piped())
+                .spawn().unwrap();
+
+            process.stdin.unwrap().write_all(p.content.as_bytes()).unwrap();
+            let mut content_rendered = String::new();
+            process.stdout.unwrap().read_to_string(&mut content_rendered).unwrap();
+
             let mut c = Context::new();
-            c.add("path", &"TODO path".to_owned());
-            c.add("content", &p.content);
+            c.add("path", &p.path.to_str().unwrap());
+            c.add("content", &content_rendered);
             c.add("prev", &PageContext { prev: "p".to_owned(), next: "n".to_owned(), url: "u".to_owned(), title: "t".to_owned() });
             c.add("next", &PageContext { prev: "p".to_owned(), next: "n".to_owned(), url: "u".to_owned(), title: "t".to_owned() });
 
