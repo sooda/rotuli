@@ -1,7 +1,9 @@
 Early design plans
 ==================
 
-I looked at several simple generators (i don't want a wordpress-sized thing) and most were too large, some were okay, some too hardcoded for, e.g., very post-centric approach, and I just wanted to learn me some Rust.
+None of this is perfectly accurate anymore; this is a brain dump to bootstrap planning.
+
+I looked at several simple generators (stuff like wordpress is too big, too dynamic, incompatible with git) and most were too large, some were okay, some too hardcoded for, e.g., very post-centric approach, and I just wanted to learn me some Rust.
 Previously, I was planning to write this in Python, or to find one made in Python so I'd know how to hack it.
 I guess Jekyll would be good enough, too, just quickly skimmed it.
 
@@ -35,6 +37,7 @@ high level requirements
 - read plaintext git, no web ui bullshit, the "database" is files only
 - git post-commit hook to render stuff to html dir?
 - really generic, not so blog post centric although most content will be blogging
+- trivially usable for non-blog, non-website things
 - understand lists of things: categories, all posts, posts of a certain date range, posts in a certain category, project pages that aren't blog posts
   - those generic "lists of things" for "for p in posts" or "in whatever" specified in site contents, not in engine
 - simple core and some module system to incrementally add things like image thumbnailer, an embedded video player, a source code highlighter or page comments
@@ -47,7 +50,7 @@ high level requirements
 - draft pages displayed only if whole site compiled as draft
 - ability to implement an rss feed easily
 - pagination
-- prev-next links in posts
+- prev-next links in posts for all by date, for category x by date
 
 
 random details
@@ -63,10 +66,10 @@ random details
 - whole site read into memory first and parsed to get complete groups, then able to render those as listings by date/tag/category/language/...
 - blog categories in separate files, rendered to listings with description of the category
 - no template tags in content at all to keep things orthogonal, whole source is just data compiled into a single content block in the template
-  - source data doesn't know which template system is used
-  - this means, e.g., no magic template tags for images, internal links, or anything
-  - slightly worse to write, more separated so that the source can be rendered elsewhere too without the engine
-  - make the engine see things like images in the markup and build thumbs for them to ease with the layout
+    * source data doesn't know which template system is used
+    * this means, e.g., no magic template tags for images, internal links, or anything
+    * slightly worse to write, more separated so that the source can be rendered elsewhere too without the engine
+    * make the engine see things like images in the markup and build thumbs for them to ease with the layout
 
 
 site layout
@@ -101,6 +104,7 @@ content hierarchy
 - source/whatever/path/here/thing.rst -> compiled to .../thing/index.html
 - source/foo.{anything else than supported markup} is an error
 - static/path/here/any.thing copied as-is, simply a cp -r (TODO thumbnails? separate tool to generate? not in source repo)
+- or merged source and static for more pure structure
 - templates/ for those non-displayable things used for rendering
 
 
