@@ -1,4 +1,4 @@
-template: post-fi.html
+template: page-fi.html
 draft: true
 blog: true
 language: fi

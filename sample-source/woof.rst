@@ -1,4 +1,4 @@
-template: base-en.html
+template: page-en.html
 language: dog
 original: /
 

@@ -1,18 +1,9 @@
 {% extends "base.html" %}
 {% block lang %}en{% endblock lang %}
 {% block indexlang %}eng/{% endblock indexlang %}
-{% block title %}{% if title %}{{ title }} - {% endif %}sooda's blog{% endblock title %}
-{% block headline %}sooda's blog{% endblock headline %}
-{% block tagline %}passion for the pleasure of finding things out{% endblock tagline %}
+{% block title %}{% if title %}{{ title }} - {% endif %}a blog{% endblock title %}
+{% block headline %}a blog{% endblock headline %}
+{% block tagline %}this text is demo for language groups{% endblock tagline %}
 {% block navibar %}
-	<li><a href="/archive/">archive</a></li>
-	<li><a href="/categories/">categories</a></li>
-	<li><a href="/about/">about</a></li>
-	<li><a href="/rss-eng.xml">rss</a></li>
+	<li><a href="/potato/">meal</a></li>
 {% endblock navibar %}
-{% block sourcebox %}
-Source of this document lives <a href="https://github.com/sooda/blog{{ path }}">in github</a>, compiled with <a href="https://github.com/sooda/rotulus">rotulus</a>
-{% endblock sourcebox %}
-{% block aboutbox %}
-	My nickname is sooda, and I'm a low-level oriented all-around developer, hacking and crafting technical things whenever I find something puzzling enough in hardware, software or completely elsewhere. I sometimes save my thoughts in this blog.
-{% endblock aboutbox %}
