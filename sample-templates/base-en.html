@@ -5,5 +5,6 @@
 {% block headline %}a blog{% endblock headline %}
 {% block tagline %}this text is demo for language groups{% endblock tagline %}
 {% block navibar %}
+{% if meta.orig_link %}<li>fi: <a href="{{ meta.orig_link|safe }}">{{ site_titles[meta.orig_link] }}</a></li>{% endif %}
 	<li><a href="/potato/">meal</a></li>
 {% endblock navibar %}

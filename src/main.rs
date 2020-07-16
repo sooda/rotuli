@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 use std::fs::{File, create_dir_all};
 use std::io::{Read, Write};
 use yaml_rust::yaml::{Yaml, Hash, YamlLoader};
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, BTreeMap};
 use std::iter::FromIterator;
 use std::fmt;
 use std::process::{Command, Stdio};
@@ -155,6 +155,7 @@ impl Page {
     fn language(&self) -> Option<&str> {
         self.metadata.get("language").map(|meta| meta.as_str().unwrap())
     }
+    */
 
     fn display_url(&self) -> String {
         let as_is = &self.metadata.get(MAGIC_META_URL_AS_IS)
@@ -166,7 +167,6 @@ impl Page {
             self.url.to_str().unwrap().to_owned()
         }
     }
-    */
 
     fn url_file(&self) -> PathBuf {
         let as_is = &self.metadata.get(MAGIC_META_URL_AS_IS)
@@ -335,6 +335,25 @@ impl Site {
             c.insert("path", &p.path.to_str().unwrap());
             c.insert("title", &p.title());
             c.insert("content", &content_rendered);
+            c.insert("original", &PageContext { url: "URL".to_string(), title: "TITLE".to_string() });
+
+            let mut h = BTreeMap::new();
+            let origurl = p.original_url();
+            h.insert("orig_link", &origurl);
+
+            c.insert("meta", &h);
+
+            let mut h = BTreeMap::new();
+            for (_, pp) in self.pages.iter().filter(|p| p.metadata.contains_key("ok")).enumerate() {
+                //h.insert(pp.display_url(), pp.title());
+                h.insert(pp.url.to_str().unwrap(), pp.title());
+            }
+                println!("{:?}", h);
+                println!("{:?}", origurl);
+            c.insert("site_titles", &h);
+
+            //FIXME: serialize
+            //c.insert("translations", &p.metadata.get("translations").unwrap().as_hash());
 
             let s = tera.render(p.template_name(), &c).unwrap();
 
