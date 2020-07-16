@@ -141,7 +141,7 @@ impl Page {
     }
 
     fn original_url(&self) -> Option<PathBuf> {
-        self.metadata.get("original").map(|meta| {
+        self.metadata.get(MAGIC_META_ORIGINAL).map(|meta| {
             let orig = Path::new(meta.as_str().unwrap());
             if orig.starts_with("/") {
                 orig.to_path_buf()
@@ -150,6 +150,7 @@ impl Page {
             }
         })
     }
+    /*
     fn language(&self) -> Option<&str> {
         self.metadata.get("language").map(|meta| meta.as_str().unwrap())
     }
@@ -164,6 +165,7 @@ impl Page {
             self.url.to_str().unwrap().to_owned()
         }
     }
+    */
 
     fn url_file(&self) -> PathBuf {
         let as_is = &self.metadata.get(MAGIC_META_URL_AS_IS)
@@ -177,7 +179,7 @@ impl Page {
     }
 
     fn template_name(&self) -> &str {
-        self.metadata.get("template").unwrap().as_str().unwrap()
+        self.metadata.get(MAGIC_META_TEMPLATE).unwrap().as_str().unwrap()
     }
 
     fn title(&self) -> &str {
@@ -185,12 +187,12 @@ impl Page {
         self.metadata.get("title").map(|x| x.as_str().unwrap()).unwrap_or_else(|| "")
     }
 
+    /*
     fn output(&self, path: &PathBuf) {
-        /*
         let filename = if self.url.chars().nth(0).unwrap() == '/' {
             self.url.clone() + "index.html" } else { self.url.clone() };
-        */
     }
+    */
 }
 
 fn discover_source(pathname: &str) -> Vec<PathBuf> {
@@ -205,11 +207,8 @@ fn pages_by_key(pages: &Vec<Page>, name: &str) -> Vec<PageReference> {
     pages.iter().enumerate().filter(|&(_, p)| p.metadata.contains_key(name)).map(|(i, _)| PageReference(i)).collect()
 }
 
-struct TemplateContext {
-}
-
 struct Site {
-    directory: PathBuf,
+    _directory: PathBuf,
     pages: Vec<Page>,
     groups: Vec<Group>,
 }
@@ -235,7 +234,7 @@ impl Site {
         */
 
         // Move pages to site, construct groups
-        let mut site = Site { directory: dir.to_path_buf(), pages: pages, groups: vec![] };
+        let mut site = Site { _directory: dir.to_path_buf(), pages: pages, groups: vec![] };
         let group_names = BTreeSet::from_iter(site.pages.iter().map(|p| p.metadata.keys())
             .fold(vec![], |mut tot, key| { tot.extend(key); tot }));
         site.groups = group_names.iter().map(
@@ -311,7 +310,7 @@ impl Site {
         }
 
         let output_dir = Path::new(output_dir);
-        for (i, p) in self.pages.iter().filter(|p| p.metadata.contains_key("ok")).enumerate() {
+        for (_i, p) in self.pages.iter().filter(|p| p.metadata.contains_key("ok")).enumerate() {
             println!("AAAA {:?}", p.metadata.contains_key("ok"));
             println!("AAAA {:?}", p.metadata.get("ok"));
             if false { // p.path.to_string_lossy() != "sample-source/2016/9/14/test-commit.rst" {
