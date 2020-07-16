@@ -3,6 +3,7 @@ template: page-fi.html
 language: fi
 blog: true
 kategoria: [elukat, kielitesti ja monta kategoriaa]
+title: oispa koiranpentu
 
 oispa koiranpentu
 =================

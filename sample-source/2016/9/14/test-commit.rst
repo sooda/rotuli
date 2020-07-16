@@ -6,11 +6,10 @@ blog: true
 # relative url, yay
 original: testi
 category: [animals]
+title: puppies are awesome
 
 puppies are awesome
 ===================
-
-Where is the stuff specified in base-en.html? See eng.rst for explanation.
 
 This is just a test page, and all of the yaml is also still just initial pseudocode.
 If the original url does not start with a slash, then it's relative to the current one.

@@ -1,8 +1,6 @@
 extern crate glob;
 extern crate yaml_rust;
 extern crate tera;
-#[macro_use]
-extern crate serde_derive;
 extern crate serde;
 
 use glob::glob;
@@ -18,6 +16,7 @@ use std::collections::BTreeSet;
 use std::iter::FromIterator;
 use std::fmt;
 use std::process::{Command, Stdio};
+use serde::Serialize;
 
 // Metadata keys treated in a special way; could use strings in-place, but now they're in a single
 // place here for explicitness.
@@ -181,6 +180,11 @@ impl Page {
         self.metadata.get("template").unwrap().as_str().unwrap()
     }
 
+    fn title(&self) -> &str {
+        // FIXME: read the rst title and default to it
+        self.metadata.get("title").map(|x| x.as_str().unwrap()).unwrap_or_else(|| "")
+    }
+
     fn output(&self, path: &PathBuf) {
         /*
         let filename = if self.url.chars().nth(0).unwrap() == '/' {
@@ -327,15 +331,16 @@ impl Site {
             process.stdout.unwrap().read_to_string(&mut content_rendered).unwrap();
 
             let mut c = Context::new();
-            c.add("path", &p.path.to_str().unwrap());
-            c.add("content", &content_rendered);
-            c.add("prev", &PageContext { prev: "p".to_owned(), next: "n".to_owned(), url: "u".to_owned(), title: "t".to_owned() });
-            c.add("next", &PageContext { prev: "p".to_owned(), next: "n".to_owned(), url: "u".to_owned(), title: "t".to_owned() });
+            c.insert("path", &p.path.to_str().unwrap());
+            c.insert("title", &p.title());
+            c.insert("content", &content_rendered);
+            c.insert("prev", &PageContext { prev: "p".to_owned(), next: "n".to_owned(), url: "u".to_owned(), title: "t".to_owned() });
+            c.insert("next", &PageContext { prev: "p".to_owned(), next: "n".to_owned(), url: "u".to_owned(), title: "t".to_owned() });
 
             //let outfile = output_dir.join(p.url_file());
             //write_file(&outfile, s);
             //let s = tera.render(&("templates/".to_owned() + p.template_name()), c).unwrap();
-            let s = tera.render(p.template_name(), c).unwrap();
+            let s = tera.render(p.template_name(), &c).unwrap();
 
             let outfile = output_dir.join(p.url_file());
             write_file(&outfile, &s);
@@ -347,7 +352,7 @@ fn main() {
     let source = &env::args().nth(1).unwrap();
     let output = &env::args().nth(2).unwrap();
     let site = Site::new(source);
-    let tera = Tera::new("sample-templates/**/*.html");
+    let tera = Tera::new("sample-templates/**/*.html").unwrap();
 
     println!("--- yiss! groups ---");
 
