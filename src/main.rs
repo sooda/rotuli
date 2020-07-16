@@ -347,7 +347,7 @@ fn main() {
     let source = &env::args().nth(1).unwrap();
     let output = &env::args().nth(2).unwrap();
     let site = Site::new(source);
-    let tera = Tera::new("templates2/**/*.html");
+    let tera = Tera::new("sample-templates/**/*.html");
 
     println!("--- yiss! groups ---");
 
