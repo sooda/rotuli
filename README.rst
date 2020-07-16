@@ -58,6 +58,7 @@ For example:
 * Multilingual content: use the metadata and groups to link originals and translations together
 * Categories aka tags aka keywords: again, group content together in the metadata and use templates to list them
 * Automatic by-date groups to list content (e.g., blog posts) based on year, month or day
+* Links to next and previous pages in a collection based on the current page index in a group
 
 Why
 ---

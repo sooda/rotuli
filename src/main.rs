@@ -140,6 +140,7 @@ impl Page {
         }
     }
 
+    // XXX: will be replaced with general groups
     fn original_url(&self) -> Option<PathBuf> {
         self.metadata.get(MAGIC_META_ORIGINAL).map(|meta| {
             let orig = Path::new(meta.as_str().unwrap());
@@ -198,13 +199,17 @@ impl Page {
 fn discover_source(pathname: &str) -> Vec<PathBuf> {
     let paths = glob(&*(pathname.to_string() + "/**/*.rst")).unwrap();
     // silently ignore Err items, unreadable files are skipped on purpose
+    // (FIXME: verbose mode to print them)
     let pathbufs: Vec<_> = paths.filter_map(|x| x.ok()).collect();
 
     pathbufs
 }
 
 fn pages_by_key(pages: &Vec<Page>, name: &str) -> Vec<PageReference> {
-    pages.iter().enumerate().filter(|&(_, p)| p.metadata.contains_key(name)).map(|(i, _)| PageReference(i)).collect()
+    pages.iter().enumerate()
+        .filter(|&(_, p)| p.metadata.contains_key(name))
+        .map(|(i, _)| PageReference(i))
+        .collect()
 }
 
 struct Site {
@@ -225,8 +230,6 @@ impl Site {
         for p in &pages {
             let b = &p.metadata.get("blog").unwrap_or(&Yaml::Boolean(false)).as_bool().unwrap();
             println!("{:?}", p);
-            println!("blog {:?} {:?}", p.metadata.get("blog"), b);
-            println!("bloggity {:?}", p.metadata.get("bloggity"));
             println!("path {:?}", p.path);
             println!("url {:?} {:?}", p.url, p.display_url());
             println!("language {:?}", p.language());
@@ -235,13 +238,15 @@ impl Site {
 
         // Move pages to site, construct groups
         let mut site = Site { _directory: dir.to_path_buf(), pages: pages, groups: vec![] };
-        let group_names = BTreeSet::from_iter(site.pages.iter().map(|p| p.metadata.keys())
-            .fold(vec![], |mut tot, key| { tot.extend(key); tot }));
+        let group_names = BTreeSet::from_iter(
+            site.pages.iter()
+            .map(|p| p.metadata.keys())
+            .fold(vec![], |mut tot, key| { tot.extend(key); tot })
+        );
         site.groups = group_names.iter().map(
             |key| Group::new(key, pages_by_key(&site.pages, key))).collect();
 
-        // Transpose groups (lists of pages by key) into their links (lists of groups by pages
-        // (i.e., lists of keys))
+        // Transpose groups from (list of pages by group ref) into (list of groups by page ref)
         let pagegroups = (0..site.pages.len()).map(
             |pi| site.groups_for(PageReference(pi))).collect::<Vec<_>>();
 
@@ -250,6 +255,10 @@ impl Site {
         }
 
         // build translation cross-references for pages that link to originals
+        // XXX: this has to become translation-agnostic and more general, so that pages are
+        // detected in any metadata group and crossrefs built on all of them (like categories)
+        // (perhaps use a custom datatype for this, or hack it up with special hashes for now)
+        // https://github.com/chyh1990/yaml-rust/issues/35
         let mut translations: Vec<Vec<PageReference>> = vec![vec![]; site.pages.len()];
         {
             let orig_id_by_page = |p: &Page| {
@@ -263,11 +272,11 @@ impl Site {
                 let orig_id = orig_id_by_page(p);
                 match orig_id {
                     Some(id) => from_origs[id.0].push(PageReference(i)),
-                    None => ()
+                    None => () // pop up a verbose message?
                 };
             }
-            // then, flip edges to the other direction by copying the lists; also record edges from
-            // origs to origs so the translation lists are the same for every translated page
+            // then, flip edges to the other direction by copying the lists; also record cycle edges from
+            // origs to origs so the translation lists are the same and complete for every translated page
             for (orig_i, dests) in from_origs.iter_mut().enumerate() {
                 if !dests.is_empty() { dests.push(PageReference(orig_i)); }
                 for pageref in dests.iter() {
@@ -295,6 +304,7 @@ impl Site {
     fn get_group(&self, name: &str) -> GroupReference {
         GroupReference(self.groups.iter().enumerate().find(|&(_, x)| x.name == name).unwrap().0)
     }
+
     fn page_by_url(&self, url: &str) -> PageReference {
         PageReference(self.pages.iter().enumerate().find(
                 |&(_, x)| x.url.to_str().unwrap() == url).unwrap().0)
@@ -303,8 +313,6 @@ impl Site {
     fn render(&self, tera: &Tera, output_dir: &str) {
         #[derive(Serialize)]
         struct PageContext {
-            prev: String,
-            next: String,
             url: String,
             title: String,
         }
@@ -313,12 +321,6 @@ impl Site {
         for (_i, p) in self.pages.iter().filter(|p| p.metadata.contains_key("ok")).enumerate() {
             println!("AAAA {:?}", p.metadata.contains_key("ok"));
             println!("AAAA {:?}", p.metadata.get("ok"));
-            if false { // p.path.to_string_lossy() != "sample-source/2016/9/14/test-commit.rst" {
-            //if p.path.to_string_lossy() != "sample-source/index.rst" {
-            //if p.path.to_string_lossy() != "sample-source/eng.rst" {
-                println!("not render {:?} to {:?} using {}", p.path.to_string_lossy(), p.url_file(), p.template_name());
-                continue;
-            }
             println!("render {:?} to {:?} using {}", p.path, p.url_file(), p.template_name());
 
             let process = Command::new("./rstrender.py")
@@ -333,12 +335,7 @@ impl Site {
             c.insert("path", &p.path.to_str().unwrap());
             c.insert("title", &p.title());
             c.insert("content", &content_rendered);
-            c.insert("prev", &PageContext { prev: "p".to_owned(), next: "n".to_owned(), url: "u".to_owned(), title: "t".to_owned() });
-            c.insert("next", &PageContext { prev: "p".to_owned(), next: "n".to_owned(), url: "u".to_owned(), title: "t".to_owned() });
 
-            //let outfile = output_dir.join(p.url_file());
-            //write_file(&outfile, s);
-            //let s = tera.render(&("templates/".to_owned() + p.template_name()), c).unwrap();
             let s = tera.render(p.template_name(), &c).unwrap();
 
             let outfile = output_dir.join(p.url_file());
