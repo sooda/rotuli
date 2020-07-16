@@ -13,23 +13,6 @@ Here's some mixed things I want for the new blog and for the engine.
 Not having special handling for blog posts that are going to be like 99% of the content is probably a biiig mistake in the long run, but oh gosh, a magic directory for "posts" or "content" simply doesn't *feel* right to me. Just don't want to separate text and images, for example.
 
 
-good looking samples
---------------------
-
-- Nice layout and good source structure http://lucumr.pocoo.org https://github.com/mitsuhiko/lucumr https://github.com/mitsuhiko/rstblog/tree/master/rstblog
-- http://stevelosh.com
-- per-post images, and i like the colors here http://www.windytan.com/ (todo: diy background with random halton dots or something? gvim-ish colorscheme? some cream white bg?)
-- http://gitready.com
-- http://ithare.com/
-- https://fgiesen.wordpress.com, not so minimal tho but the small number of categories for the navi bar is nice
-- some medium.com blogs
-- colorscheme http://featherweightmusings.blogspot.fi/ but i won't use separate backgrounds like that
-- https://hoverbear.org
-- https://ruudvanasseldonk.com/2016/11/30/zero-cost-abstractions
-- https://eev.ee/
-- https://subtlepatterns.com/ for repeating background pic
-
-
 high level requirements
 -----------------------
 
@@ -72,21 +55,6 @@ random details
     * make the engine see things like images in the markup and build thumbs for them to ease with the layout
 
 
-site layout
------------
-
-- trivial multilingual support by unique urls; link translations to original url in source metadata
-- / front page like previously
-- /pages/N/ display latest posts paginated, like previously with ?page=x
-- /yyyy/mm/dd/post/ like now, but without global sidebar bullshit
-- /category/name/, /category/name/N/ to describe this category and list all posts, paginated
-- /category/ to list all categories
-- /archive/ just as the old sidebar, plain year/month list of posts
-- /about/ and other ordinary non-post pages visible as-is with no other magic
-- each shortened blog (first paragraph) in listings to contain a selected picture if available
-- maybe display a separate lead paragraph instead of just the first paragraph in lists of posts
-
-
 content type
 ------------
 
@@ -94,18 +62,6 @@ content type
 - super simple to write so it's easy to just write the damn blog
 - per-blogentry media, or do i want a global arbitrary per-site media storage with some magic to include any of those too?
 - template metadata substitutes title if none available in the content for nearly empty pages that have most of their content in templates (like a blog archive)
-
-
-content hierarchy
------------------
-
-- source/ contains the to-be-compiled content
-- source/whatever/path/here/index.rst -> compiled to .../index.html
-- source/whatever/path/here/thing.rst -> compiled to .../thing/index.html
-- source/foo.{anything else than supported markup} is an error
-- static/path/here/any.thing copied as-is, simply a cp -r (TODO thumbnails? separate tool to generate? not in source repo)
-- or merged source and static for more pure structure
-- templates/ for those non-displayable things used for rendering
 
 
 output generation
