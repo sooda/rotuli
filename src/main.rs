@@ -155,7 +155,7 @@ impl Page {
         })
     }
 
-    fn display_url(&self) -> String {
+    fn _display_url(&self) -> String {
         let as_is = &self.metadata.get(MAGIC_META_URL_AS_IS)
             .map(|x| x.as_bool().unwrap()).unwrap_or(false);
 
@@ -301,26 +301,25 @@ impl Site {
     }
 
     fn render(&self, tera: &Tera, output_dir: &str) {
-        // FIXME: &str
         #[derive(Debug, Serialize)]
-        struct PageContext {
-            path: String,
-            url: String,
-            title: String,
-            meta: serde_yaml::Mapping,
+        struct PageContext<'a> {
+            path: &'a str,
+            url: &'a str,
+            title: &'a str,
+            meta: &'a serde_yaml::Mapping,
         }
         #[derive(Debug, Serialize)]
         struct SiteContext<'a> {
-            pages: &'a Vec<PageContext>,
-            pages_by_url: BTreeMap<&'a str, &'a PageContext>,
+            pages: &'a Vec<PageContext<'a>>,
+            pages_by_url: BTreeMap<&'a str, &'a PageContext<'a>>,
         }
 
         let pages_cx = self.pages.iter().filter(|p| p.metadata.contains_key("ok"))
             .map(|p| PageContext {
-                path: p.path.to_str().unwrap().to_string(),
-                url: p.url.to_str().unwrap().to_string(),
-                title: p.title().to_string(),
-                meta: p.metadata.data.clone(),
+                path: p.path.to_str().unwrap(),
+                url: p.url.to_str().unwrap(),
+                title: p.title(),
+                meta: &p.metadata.data,
             }).collect::<Vec<_>>();
         let pages_by_url_cx = pages_cx.iter().map(|p| (&p.url as &str, p)).collect();
         let site_cx = SiteContext {
