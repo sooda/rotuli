@@ -1,0 +1,12 @@
+{% extends "base-en.html" %}
+{% block content %}
+	{{ content|safe }}
+
+	(debug: pages by "{{ meta.category_name }}" appear here)
+
+	<ul>
+		{% for p in site.groups["category"].pages %}
+			<li><a href="{{ p.url }}/">{{ p.title }}</a></li>
+		{% endfor %}
+	</ul>
+{% endblock content %}

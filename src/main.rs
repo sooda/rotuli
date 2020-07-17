@@ -312,11 +312,21 @@ impl Site {
             title: &'a str,
             meta: &'a serde_yaml::Mapping,
         }
+
+        #[derive(Debug, Serialize)]
+        struct GroupContext<'a> {
+            name: &'a str,
+            pages: Vec<&'a PageContext<'a>>,
+        }
+
         #[derive(Debug, Serialize)]
         struct SiteContext<'a> {
             pages: &'a Vec<PageContext<'a>>,
             pages_by_url: BTreeMap<&'a str, &'a PageContext<'a>>,
+            groups: BTreeMap<&'a str, GroupContext<'a>>,
         }
+
+        // XXX: this is here for now to remind about a possible additional post-load draft flag
         let page_ok = |p: &&Page| p.metadata.get("ok")
             .map(|x| x.as_bool().unwrap())
             .unwrap_or(false);
@@ -330,10 +340,18 @@ impl Site {
                 title: p.title(),
                 meta: &p.metadata.data,
             }).collect::<Vec<_>>();
+
         let pages_by_url_cx = pages_cx.iter().map(|p| (&p.url as &str, p)).collect();
+
+        let groups_cx = self.groups.iter().map(|g| (&g.name as &str, GroupContext {
+            name: &g.name,
+            pages: g.pages.iter().map(|pageref| &pages_cx[pageref.0]).collect(),
+        })).collect();
+
         let site_cx = SiteContext {
             pages: &pages_cx,
             pages_by_url: pages_by_url_cx,
+            groups: groups_cx,
         };
 
         let output_dir = Path::new(output_dir);
