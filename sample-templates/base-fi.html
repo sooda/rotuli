@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block lang %}fi{% endblock lang %}
-{% block title %}{% if title %}{{ title }} - {% endif %}jonkinmoinen blogi{% endblock title %}
+{% block title %}{% if page.title %}{{ page.title }} - {% endif %}jonkinmoinen blogi{% endblock title %}
 {% block headline %}jonkinmoinen blogi{% endblock headline %}
 {% block tagline %}tämäkin esittää miten kieliryhmät pelaavat{% endblock tagline %}
 {% block navibar %}
-{% if translations.en %}<li>en: <a href="{{ translations.en|safe }}">{{ site_titles[translations.en] }}</a></li>{% endif %}
+{% if meta.translations.en %}<li>en: <a href="{{ meta.translations.en|safe }}">{{ site.pages_by_url[meta.translations.en].title }}</a></li>{% endif %}
 	<li><a href="/peruna/">ateria</a></li>
 {% endblock navibar %}

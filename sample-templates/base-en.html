@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block lang %}en{% endblock lang %}
 {% block indexlang %}eng/{% endblock indexlang %}
-{% block title %}{% if title %}{{ title }} - {% endif %}a blog{% endblock title %}
+{% block title %}{% if page.title %}{{ page.title }} - {% endif %}a blog{% endblock title %}
 {% block headline %}a blog{% endblock headline %}
 {% block tagline %}this text is demo for language groups{% endblock tagline %}
 {% block navibar %}
-{% if meta.orig_link %}<li>fi: <a href="{{ meta.orig_link|safe }}">{{ site_titles[meta.orig_link] }}</a></li>{% endif %}
+{% if meta.original %}<li>fi: <a href="{{ meta.original }}">{{ site_titles[meta.original] }}</a></li>{% endif %}
 	<li><a href="/potato/">meal</a></li>
 {% endblock navibar %}

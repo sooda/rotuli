@@ -127,7 +127,6 @@ impl Page {
         let metadata = Metadata::from_string(&data[..split_pos]);
         let content = &data[split_pos + 2..];
         let url = make_url(path, root);
-        println!("doing {:?} <{:?}>", path, content);
         let (rendered, title) = rstrender(content);
 
         Page {
@@ -149,15 +148,12 @@ impl Page {
             if orig.starts_with("/") {
                 orig.to_path_buf()
             } else {
+                // :( FIXME: can't get this functionality just via raw metadata, but perhaps via
+                // custom types (yaml tags)
                 self.url.parent().unwrap().join(orig)
             }
         })
     }
-    /*
-    fn language(&self) -> Option<&str> {
-        self.metadata.get("language").map(|meta| meta.as_str().unwrap())
-    }
-    */
 
     fn display_url(&self) -> String {
         let as_is = &self.metadata.get(MAGIC_META_URL_AS_IS)
@@ -189,13 +185,6 @@ impl Page {
         // FIXME: read the rst title and default to it
         self.metadata.get("title").map(|x| x.as_str().unwrap()).unwrap_or(&self.title)
     }
-
-    /*
-    fn output(&self, path: &PathBuf) {
-        let filename = if self.url.chars().nth(0).unwrap() == '/' {
-            self.url.clone() + "index.html" } else { self.url.clone() };
-    }
-    */
 }
 
 fn discover_source(pathname: &str) -> Vec<PathBuf> {
@@ -312,39 +301,53 @@ impl Site {
     }
 
     fn render(&self, tera: &Tera, output_dir: &str) {
-        #[derive(Serialize)]
+        // FIXME: &str
+        #[derive(Debug, Serialize)]
         struct PageContext {
+            path: String,
             url: String,
             title: String,
+            meta: serde_yaml::Mapping,
         }
+        #[derive(Debug, Serialize)]
+        struct SiteContext<'a> {
+            pages: &'a Vec<PageContext>,
+            pages_by_url: BTreeMap<&'a str, &'a PageContext>,
+        }
+
+        let pages_cx = self.pages.iter().filter(|p| p.metadata.contains_key("ok"))
+            .map(|p| PageContext {
+                path: p.path.to_str().unwrap().to_string(),
+                url: p.url.to_str().unwrap().to_string(),
+                title: p.title().to_string(),
+                meta: p.metadata.data.clone(),
+            }).collect::<Vec<_>>();
+        let pages_by_url_cx = pages_cx.iter().map(|p| (&p.url as &str, p)).collect();
+        let site_cx = SiteContext {
+            pages: &pages_cx,
+            pages_by_url: pages_by_url_cx,
+        };
 
         let output_dir = Path::new(output_dir);
         for (_i, p) in self.pages.iter().filter(|p| p.metadata.contains_key("ok")).enumerate() {
             println!("render {:?} to {:?} using {}", p.path, p.url_file(), p.template_name());
 
-            let mut c = Context::new();
-            c.insert("path", &p.path.to_str().unwrap());
-            c.insert("title", &p.title());
-            c.insert("content", &p.content_rendered);
-            c.insert("original", &PageContext { url: "URL".to_string(), title: "TITLE".to_string() });
+            let mut cx = Context::new();
 
-            let mut h = BTreeMap::new();
-            let origurl = p.original_url();
-            h.insert("orig_link", &origurl);
-
-            c.insert("meta", &h);
+            let page_cx = &site_cx.pages[_i];
+            cx.insert("site", &site_cx);
+            cx.insert("page", &page_cx);
+            cx.insert("content", &p.content_rendered);
+            cx.insert("meta", &page_cx.meta);
 
             let mut h = BTreeMap::new();
             for (_, pp) in self.pages.iter().filter(|p| p.metadata.contains_key("ok")).enumerate() {
                 //h.insert(pp.display_url(), pp.title());
                 h.insert(pp.url.to_str().unwrap(), pp.title());
             }
-            c.insert("site_titles", &h);
+            cx.insert("site_titles", &h);
 
-            //FIXME: serialize
-            c.insert("translations", &p.metadata.get("translations").map(|x| x.as_mapping()));
-
-            let s = tera.render(p.template_name(), &c).unwrap();
+            let s = tera.render(p.template_name(), &cx).unwrap();
 
             let outfile = output_dir.join(p.url_file());
             write_file(&outfile, &s);
@@ -370,7 +373,6 @@ fn document_title(document: &document_tree::Document) -> String {
      *       common: CommonAttributes { ids: [], names: [], source: None, classes: [] },
      *       children: ["Hello world from rotuli."] },
      */
-    println!("{:?}", document);
     // each document should be a section only for consistency; without a top level title we'd get
     // just a bunch of paragraphs
     assert!(document.children().len() <= 1, "don't know what to do with this complex document (did you misformat or omit the title?)");
