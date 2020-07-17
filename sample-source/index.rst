@@ -7,5 +7,3 @@ Esimerkkisivusto
 ================
 
 Hei vaan, karu maailma. Rotuli sanoo käsipäivää.
-
-Title puuttuu toistaiseksi niin kielilinkki on tyhjä.

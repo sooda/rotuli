@@ -6,7 +6,7 @@ blog: true
 # relative url, yay
 original: testi
 category: [animals]
-title: puppies are awesome
+title: woof phoof overwritten
 translations: { fi: /2016/9/14/testi }
 
 puppies are awesome

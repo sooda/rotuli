@@ -83,8 +83,10 @@ struct GroupReference(usize);
 struct Page {
     path: PathBuf,
     url: PathBuf,
+    title: String,
     metadata: Metadata,
     content: String,
+    content_rendered: String,
     // filled after initial page construction
     groups: Vec<GroupReference>,
     translations: Vec<PageReference>
@@ -126,12 +128,16 @@ impl Page {
         let metadata = Metadata::from_string(&data[..split_pos]);
         let content = &data[split_pos + 2..];
         let url = make_url(path, root);
+        println!("doing {:?} <{:?}>", path, content);
+        let (rendered, title) = rstrender(content);
 
         Page {
-            metadata: metadata,
-            content: content.to_string(),
             path: path.to_path_buf(),
             url: url,
+            title: title,
+            metadata: metadata,
+            content: content.to_string(),
+            content_rendered: rendered,
             groups: vec![],
             translations: vec![]
         }
@@ -180,9 +186,9 @@ impl Page {
         self.metadata.get(MAGIC_META_TEMPLATE).unwrap().as_str().unwrap()
     }
 
-    fn title(&self) -> Option<&str> {
+    fn title(&self) -> &str {
         // FIXME: read the rst title and default to it
-        self.metadata.get("title").map(|x| x.as_str().unwrap())
+        self.metadata.get("title").map(|x| x.as_str().unwrap()).unwrap_or(&self.title)
     }
 
     /*
@@ -315,11 +321,9 @@ impl Site {
 
         let output_dir = Path::new(output_dir);
         for (_i, p) in self.pages.iter().filter(|p| p.metadata.contains_key("ok")).enumerate() {
-            println!("AAAA {:?}", p.metadata.contains_key("ok"));
-            println!("AAAA {:?}", p.metadata.get("ok"));
             println!("render {:?} to {:?} using {}", p.path, p.url_file(), p.template_name());
 
-            let (content_rendered, content_title) = if false {
+            if false {
                 let process = Command::new("./rstrender.py")
                     .stdin(Stdio::piped()).stdout(Stdio::piped())
                     .spawn().unwrap();
@@ -327,15 +331,13 @@ impl Site {
                 process.stdin.unwrap().write_all(p.content.as_bytes()).unwrap();
                 let mut content_rendered = String::new();
                 process.stdout.unwrap().read_to_string(&mut content_rendered).unwrap();
-                (content_rendered, "".to_string())
-            } else {
-                rstrender(&p.content)
+                (content_rendered, "".to_string());
             };
 
             let mut c = Context::new();
             c.insert("path", &p.path.to_str().unwrap());
-            c.insert("title", &p.title().unwrap_or(&content_title));
-            c.insert("content", &content_rendered);
+            c.insert("title", &p.title());
+            c.insert("content", &p.content_rendered);
             c.insert("original", &PageContext { url: "URL".to_string(), title: "TITLE".to_string() });
 
             let mut h = BTreeMap::new();
@@ -349,8 +351,6 @@ impl Site {
                 //h.insert(pp.display_url(), pp.title());
                 h.insert(pp.url.to_str().unwrap(), pp.title());
             }
-                println!("{:?}", h);
-                println!("{:?}", origurl);
             c.insert("site_titles", &h);
 
             //FIXME: serialize
@@ -422,15 +422,18 @@ fn document_title(document: &document_tree::Document) -> String {
 }
 
 fn rstrender(s: &str) -> (String, String) {
-    let document = rst_parser::parse(s).unwrap();
+    if let Ok(document) = rst_parser::parse(s) {
+        let mut rendered_bytes = Vec::new();
+        let _rend_res = rst_renderer::render_html(&document, &mut rendered_bytes, false);
+        let rendered = String::from_utf8(rendered_bytes).unwrap();
 
-    let mut rendered_bytes = Vec::new();
-    let _rend_res = rst_renderer::render_html(&document, &mut rendered_bytes, false);
-    let rendered = String::from_utf8(rendered_bytes).unwrap();
+        let title = document_title(&document);
 
-    let title = document_title(&document);
-
-    (rendered, title)
+        (rendered, title)
+    } else {
+        // TODO: error handling and verbosity
+        ("".to_string(), "".to_string())
+    }
 }
 
 fn main() {
