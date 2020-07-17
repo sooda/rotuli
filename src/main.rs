@@ -345,7 +345,7 @@ impl Site {
             c.insert("site_titles", &h);
 
             //FIXME: serialize
-            //c.insert("translations", &p.metadata.get("translations").unwrap().as_hash());
+            c.insert("translations", &p.metadata.get("translations").map(|x| x.as_mapping()));
 
             let s = tera.render(p.template_name(), &c).unwrap();
 

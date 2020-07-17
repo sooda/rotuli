@@ -4,6 +4,6 @@
 {% block headline %}jonkinmoinen blogi{% endblock headline %}
 {% block tagline %}tämäkin esittää miten kieliryhmät pelaavat{% endblock tagline %}
 {% block navibar %}
-{% if meta.translations.en %}<li>en: <a href="{{ meta.translations.en|safe }}">{{ site_titles[meta.translations.en] }}</a></li>{% endif %}
+{% if translations.en %}<li>en: <a href="{{ translations.en|safe }}">{{ site_titles[translations.en] }}</a></li>{% endif %}
 	<li><a href="/peruna/">ateria</a></li>
 {% endblock navibar %}
