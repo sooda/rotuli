@@ -17,7 +17,6 @@ use std::io::{Read, Write};
 use std::collections::{BTreeSet, BTreeMap};
 use std::iter::FromIterator;
 use std::fmt;
-use std::process::{Command, Stdio};
 use serde::Serialize;
 use document_tree::element_categories::HasChildren;
 
@@ -322,17 +321,6 @@ impl Site {
         let output_dir = Path::new(output_dir);
         for (_i, p) in self.pages.iter().filter(|p| p.metadata.contains_key("ok")).enumerate() {
             println!("render {:?} to {:?} using {}", p.path, p.url_file(), p.template_name());
-
-            if false {
-                let process = Command::new("./rstrender.py")
-                    .stdin(Stdio::piped()).stdout(Stdio::piped())
-                    .spawn().unwrap();
-
-                process.stdin.unwrap().write_all(p.content.as_bytes()).unwrap();
-                let mut content_rendered = String::new();
-                process.stdout.unwrap().read_to_string(&mut content_rendered).unwrap();
-                (content_rendered, "".to_string());
-            };
 
             let mut c = Context::new();
             c.insert("path", &p.path.to_str().unwrap());
