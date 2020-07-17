@@ -1,0 +1,8 @@
+{% extends "base-en.html" %}
+{% block content %}
+	{{ content | safe }}
+
+	<ul>{% for page in site.pages | filter(attribute="meta.language", value="en") %}
+		<li><a href="{{ page.url }}">{{ page.title }}</a></li>{% endfor %}
+	</ul>
+{% endblock content %}
