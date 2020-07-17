@@ -313,8 +313,13 @@ impl Site {
             pages: &'a Vec<PageContext<'a>>,
             pages_by_url: BTreeMap<&'a str, &'a PageContext<'a>>,
         }
+        let page_ok = |p: &&Page| p.metadata.get("ok")
+            .map(|x| x.as_bool().unwrap())
+            .unwrap_or(false);
+        // closure because cloning one filter isn't ergonomic
+        let ok_pages = || self.pages.iter().filter(page_ok);
 
-        let pages_cx = self.pages.iter().filter(|p| p.metadata.contains_key("ok"))
+        let pages_cx = ok_pages()
             .map(|p| PageContext {
                 path: p.path.to_str().unwrap(),
                 url: p.url.to_str().unwrap(),
@@ -328,7 +333,7 @@ impl Site {
         };
 
         let output_dir = Path::new(output_dir);
-        for (_i, p) in self.pages.iter().filter(|p| p.metadata.contains_key("ok")).enumerate() {
+        for (_i, p) in ok_pages().enumerate() {
             println!("render {:?} to {:?} using {}", p.path, p.url_file(), p.template_name());
 
             let mut cx = Context::new();
@@ -340,7 +345,7 @@ impl Site {
             cx.insert("meta", &page_cx.meta);
 
             let mut h = BTreeMap::new();
-            for (_, pp) in self.pages.iter().filter(|p| p.metadata.contains_key("ok")).enumerate() {
+            for (_, pp) in ok_pages().enumerate() {
                 //h.insert(pp.display_url(), pp.title());
                 h.insert(pp.url.to_str().unwrap(), pp.title());
             }
