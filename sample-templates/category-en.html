@@ -4,9 +4,7 @@
 
 	(debug: pages by "{{ meta.category_name }}" appear here)
 
-	<ul>
-		{% for p in site.groups["category"].pages | filter(attribute="meta.category", value=[meta.category_name]) %}
-			<li><a href="{{ p.url }}/">{{ p.title }}</a></li>
-		{% endfor %}
+	<ul>{% for p in site.groups["category"].pages %}{% if p.meta.category is containing(meta.category_name) %}
+		<li><a href="{{ p.url }}/">{{ p.title }}</a></li>{% endif %}{% endfor %}
 	</ul>
 {% endblock content %}
