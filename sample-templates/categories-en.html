@@ -1,0 +1,9 @@
+{% extends "base-en.html" %}
+{% block content %}
+	{{ content | safe }}
+
+	<ul>{% for catname in site.groups["category"].pages | filter(attribute="meta.language", value="en") |
+		map(attribute="meta.category") | flatten_array | unique | sort %}
+		<li><a href="{{ catname }}">{{ catname }}</a></li>{% endfor %}
+	</ul>
+{% endblock content %}

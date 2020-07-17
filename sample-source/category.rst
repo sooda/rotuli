@@ -1,4 +1,6 @@
-template: category-en.html
+ok: true
+template: categories-en.html
+original: /kategoria
 
 all categories
 --------------

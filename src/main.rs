@@ -445,11 +445,31 @@ fn rstrender(s: &str) -> (String, String) {
     }
 }
 
+// Array([Array([String("x")]), Array([String("y")]), Array([String("z"), String("w")])
+// into Array([String("x"), String("y"), String("z"), String("w")])
+fn flatten_array(v: &tera::Value,
+                 _args: &std::collections::HashMap<String, tera::Value>)
+-> tera::Result<tera::Value> {
+    if let tera::Value::Array(items) = v {
+        let flattened: Vec<tera::Value> = items.into_iter()
+            .flat_map(|inner_array_val: &tera::Value| {
+                inner_array_val.as_array().expect(
+                    "trying to flatten something that contains other than just arrays"
+                    ).clone().into_iter()
+            }).collect();
+        Ok(tera::Value::Array(flattened))
+    } else {
+        Err(tera::Error::msg("trying to flatten something that's not an array"))
+    }
+}
+
 fn main() {
     let source = &env::args().nth(1).unwrap();
     let output = &env::args().nth(2).unwrap();
     let site = Site::new(source);
-    let tera = Tera::new("sample-templates/**/*.html").unwrap();
+
+    let mut tera = Tera::new("sample-templates/**/*.html").unwrap();
+    tera.register_filter("flatten_array", flatten_array);
 
     println!("--- yiss! groups ---");
 
