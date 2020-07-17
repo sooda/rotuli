@@ -1,7 +1,7 @@
 extern crate glob;
-extern crate yaml_rust;
 extern crate tera;
 extern crate serde;
+extern crate serde_yaml;
 
 use glob::glob;
 
@@ -11,7 +11,6 @@ use std::env;
 use std::path::{Path, PathBuf};
 use std::fs::{File, create_dir_all};
 use std::io::{Read, Write};
-use yaml_rust::yaml::{Yaml, Hash, YamlLoader};
 use std::collections::{BTreeSet, BTreeMap};
 use std::iter::FromIterator;
 use std::fmt;
@@ -26,34 +25,28 @@ const MAGIC_META_URL_AS_IS: &'static str = "url_as_is";
 
 #[derive(Debug)]
 struct Metadata {
-    data: Hash
+    data: serde_yaml::Mapping
 }
 
-type MetadataValue = Yaml;
+type MetadataValue = serde_yaml::Value;
 
 impl Metadata {
     // note: would be nice to have the as_bool() etc here too
     fn get(&self, key: &str) -> Option<&MetadataValue> {
-        self.data.get(&Yaml::String(key.to_string()))
+        self.data.get(&serde_yaml::to_value(key).unwrap())
     }
 
     fn keys(&self) -> Vec<String> {
-        self.data.keys().map(|x| x.as_str().unwrap().to_owned()).collect()//.cloned().collect()
+        self.data.iter().map(|(k, _)| k.as_str().unwrap().to_owned()).collect()
     }
 
     fn contains_key(&self, name: &str) -> bool {
-        self.data.contains_key(&MetadataValue::from_str(name))
+        self.data.contains_key(&serde_yaml::to_value(name).unwrap())
     }
 
     fn from_string(s: &str) -> Metadata {
-        let mut loadvec = YamlLoader::load_from_str(s).expect("failed to load metadata");
-        let data: Yaml = loadvec.pop().expect("Empty metadata, deal with this separately?");
-
-        let hash = match data {
-            Yaml::Hash(h) => h,
-            _ => panic!("Unexpected top-level metadata type")
-        };
-        Metadata { data: hash }
+        let value = serde_yaml::from_str(s).unwrap();
+        Metadata { data: value }
     }
 }
 
@@ -159,7 +152,7 @@ impl Page {
 
     fn display_url(&self) -> String {
         let as_is = &self.metadata.get(MAGIC_META_URL_AS_IS)
-            .unwrap_or(&Yaml::Boolean(false)).as_bool().unwrap();
+            .map(|x| x.as_bool().unwrap()).unwrap_or(false);
 
         if self.path.ends_with("index.rst") || !as_is {
             self.url.to_str().unwrap().to_owned() + "/"
@@ -170,7 +163,7 @@ impl Page {
 
     fn url_file(&self) -> PathBuf {
         let as_is = &self.metadata.get(MAGIC_META_URL_AS_IS)
-            .unwrap_or(&Yaml::Boolean(false)).as_bool().unwrap();
+            .map(|x| x.as_bool().unwrap()).unwrap_or(false);
 
         if *as_is {
             self.url.strip_prefix("/").unwrap().to_path_buf()
@@ -228,7 +221,6 @@ impl Site {
         // debug notes
         /*
         for p in &pages {
-            let b = &p.metadata.get("blog").unwrap_or(&Yaml::Boolean(false)).as_bool().unwrap();
             println!("{:?}", p);
             println!("path {:?}", p.path);
             println!("url {:?} {:?}", p.url, p.display_url());
