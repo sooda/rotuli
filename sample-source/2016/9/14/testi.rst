@@ -2,7 +2,7 @@ ok: true
 template: page-fi.html
 language: fi
 blog: true
-kategoria: [elukat, kielitesti ja monta kategoriaa]
+category: [elukat, kielitesti ja monta kategoriaa]
 title: Metadatatitledemo
 translations: { en: /2016/9/14/test-commit }
 
