@@ -2,6 +2,8 @@ extern crate glob;
 extern crate tera;
 extern crate serde;
 extern crate serde_yaml;
+extern crate rst_parser;
+extern crate rst_renderer;
 
 use glob::glob;
 
@@ -120,7 +122,7 @@ impl Page {
         let split_pos = data.find("\n\n").expect(&format!(
                 "Missing metadata separator in {}", path.to_string_lossy()));
         let metadata = Metadata::from_string(&data[..split_pos]);
-        let content = &data[split_pos..];
+        let content = &data[split_pos + 2..];
         let url = make_url(path, root);
 
         Page {
@@ -315,13 +317,18 @@ impl Site {
             println!("AAAA {:?}", p.metadata.get("ok"));
             println!("render {:?} to {:?} using {}", p.path, p.url_file(), p.template_name());
 
-            let process = Command::new("./rstrender.py")
-                .stdin(Stdio::piped()).stdout(Stdio::piped())
-                .spawn().unwrap();
+            let content_rendered = if false {
+                let process = Command::new("./rstrender.py")
+                    .stdin(Stdio::piped()).stdout(Stdio::piped())
+                    .spawn().unwrap();
 
-            process.stdin.unwrap().write_all(p.content.as_bytes()).unwrap();
-            let mut content_rendered = String::new();
-            process.stdout.unwrap().read_to_string(&mut content_rendered).unwrap();
+                process.stdin.unwrap().write_all(p.content.as_bytes()).unwrap();
+                let mut content_rendered = String::new();
+                process.stdout.unwrap().read_to_string(&mut content_rendered).unwrap();
+                content_rendered
+            } else {
+                rstrender(&p.content)
+            };
 
             let mut c = Context::new();
             c.insert("path", &p.path.to_str().unwrap());
@@ -353,6 +360,14 @@ impl Site {
             write_file(&outfile, &s);
         }
     }
+}
+
+fn rstrender(s: &str) -> String {
+    let a = rst_parser::parse(s);
+    let mut c = Vec::new();
+    let _b = rst_renderer::render_html(&a.unwrap(), &mut c, false);
+    let c = String::from_utf8(c).unwrap();
+    c
 }
 
 fn main() {
