@@ -4,6 +4,7 @@ extern crate serde;
 extern crate serde_yaml;
 extern crate rst_parser;
 extern crate rst_renderer;
+extern crate document_tree;
 
 use glob::glob;
 
@@ -18,6 +19,7 @@ use std::iter::FromIterator;
 use std::fmt;
 use std::process::{Command, Stdio};
 use serde::Serialize;
+use document_tree::element_categories::HasChildren;
 
 // Metadata keys treated in a special way; could use strings in-place, but now they're in a single
 // place here for explicitness.
@@ -178,9 +180,9 @@ impl Page {
         self.metadata.get(MAGIC_META_TEMPLATE).unwrap().as_str().unwrap()
     }
 
-    fn title(&self) -> &str {
+    fn title(&self) -> Option<&str> {
         // FIXME: read the rst title and default to it
-        self.metadata.get("title").map(|x| x.as_str().unwrap()).unwrap_or_else(|| "")
+        self.metadata.get("title").map(|x| x.as_str().unwrap())
     }
 
     /*
@@ -317,7 +319,7 @@ impl Site {
             println!("AAAA {:?}", p.metadata.get("ok"));
             println!("render {:?} to {:?} using {}", p.path, p.url_file(), p.template_name());
 
-            let content_rendered = if false {
+            let (content_rendered, content_title) = if false {
                 let process = Command::new("./rstrender.py")
                     .stdin(Stdio::piped()).stdout(Stdio::piped())
                     .spawn().unwrap();
@@ -325,14 +327,14 @@ impl Site {
                 process.stdin.unwrap().write_all(p.content.as_bytes()).unwrap();
                 let mut content_rendered = String::new();
                 process.stdout.unwrap().read_to_string(&mut content_rendered).unwrap();
-                content_rendered
+                (content_rendered, "".to_string())
             } else {
                 rstrender(&p.content)
             };
 
             let mut c = Context::new();
             c.insert("path", &p.path.to_str().unwrap());
-            c.insert("title", &p.title());
+            c.insert("title", &p.title().unwrap_or(&content_title));
             c.insert("content", &content_rendered);
             c.insert("original", &PageContext { url: "URL".to_string(), title: "TITLE".to_string() });
 
@@ -362,12 +364,73 @@ impl Site {
     }
 }
 
-fn rstrender(s: &str) -> String {
-    let a = rst_parser::parse(s);
-    let mut c = Vec::new();
-    let _b = rst_renderer::render_html(&a.unwrap(), &mut c, false);
-    let c = String::from_utf8(c).unwrap();
-    c
+fn document_title(document: &document_tree::Document) -> String {
+    use document_tree::{
+        element_categories as ec
+    };
+    /*
+     * Section {
+     *   common: CommonAttributes { ids: [ID("sample-website")], names: [], source: None, classes: [] },
+     *   children: [
+     *     Title {
+     *       common: CommonAttributes {
+     *         ids: [], names: [NameToken("sample-website")], source: None, classes: []
+     *       },
+     *       children: ["Sample website"]
+     *     },
+     *     Paragraph {
+     *       common: CommonAttributes { ids: [], names: [], source: None, classes: [] },
+     *       children: ["Hello world from rotuli."] },
+     */
+    println!("{:?}", document);
+    // each document should be a section only for consistency; without a top level title we'd get
+    // just a bunch of paragraphs
+    assert!(document.children().len() <= 1, "don't know what to do with this complex document (did you misformat or omit the title?)");
+
+    let section_element: &ec::StructuralSubElement = &document.children().first()
+        .expect("an empty document, you made a mistake");
+    // the inner elements are boxed, hence an extra deref
+    let section_substructure: &ec::SubStructure = &**match section_element {
+        ec::StructuralSubElement::SubStructure(x) => x,
+        // title, subtitle, decoration, ...
+        _ => panic!("strange section subelement")
+    };
+    let section_obj: &document_tree::Section = &**match section_substructure {
+        ec::SubStructure::Section(x) => x,
+        // topic, sidebar, transition, ...
+        _ => panic!("strange section substructure, do you have just one paragraph there?")
+    };
+
+    let first_element = &section_obj.children().first()
+        .expect("how did you make a section with no content?");
+
+    let titobj: &document_tree::Title = &**match first_element {
+        ec::StructuralSubElement::Title(x) => x,
+        // substructure, subtitle, decoration, ...
+        _ => panic!("only titles in the document front please")
+    };
+    assert!(titobj.children().len() <= 1, "the title is too complicated, please use just plain text");
+    let inner_textobj: &ec::TextOrInlineElement = &titobj.children().first()
+        .expect("how did you make a title with no content?");
+
+    let title_text: &String = &**match inner_textobj {
+        ec::TextOrInlineElement::String(x) => x,
+        _ => panic!("do not format (emphasize etc.) the titles"),
+    };
+
+    title_text.to_string()
+}
+
+fn rstrender(s: &str) -> (String, String) {
+    let document = rst_parser::parse(s).unwrap();
+
+    let mut rendered_bytes = Vec::new();
+    let _rend_res = rst_renderer::render_html(&document, &mut rendered_bytes, false);
+    let rendered = String::from_utf8(rendered_bytes).unwrap();
+
+    let title = document_title(&document);
+
+    (rendered, title)
 }
 
 fn main() {

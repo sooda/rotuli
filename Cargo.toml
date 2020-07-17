@@ -13,3 +13,4 @@ serde = { version = "1.0", features = ["derive"] }
 regex = "*"
 rst_parser = "0.3"
 rst_renderer = "0.3"
+document_tree = "0.3"
