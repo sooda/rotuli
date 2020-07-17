@@ -5,6 +5,6 @@
 {% block headline %}a blog{% endblock headline %}
 {% block tagline %}this text is demo for language groups{% endblock tagline %}
 {% block navibar %}
-{% if meta.original %}<li>fi: <a href="{{ meta.original }}">{{ site_titles[meta.original] }}</a></li>{% endif %}
+{% if meta.original %}<li>fi: <a href="{{ meta.original }}">{{ site.pages_by_url[meta.original].title }}</a></li>{% endif %}
 	<li><a href="/potato/">meal</a></li>
 {% endblock navibar %}

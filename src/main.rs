@@ -344,13 +344,6 @@ impl Site {
             cx.insert("content", &p.content_rendered);
             cx.insert("meta", &page_cx.meta);
 
-            let mut h = BTreeMap::new();
-            for (_, pp) in ok_pages().enumerate() {
-                //h.insert(pp.display_url(), pp.title());
-                h.insert(pp.url.to_str().unwrap(), pp.title());
-            }
-            cx.insert("site_titles", &h);
-
             let s = tera.render(p.template_name(), &cx).unwrap();
 
             let outfile = output_dir.join(p.url_file());
