@@ -214,7 +214,11 @@ impl Site {
         // Load source data as pages with just metadata properly initialized
         let srcpaths = discover_source(dir);
         let dir = Path::new(dir);
-        let pages: Vec<_> = srcpaths.iter().map(|x| Page::from_disk(x, dir)).collect();
+        let page_ok = |p: &Page| p.metadata.get("ok")
+            .map(|x| x.as_bool().unwrap())
+            .unwrap_or(false);
+        let pages: Vec<_> = srcpaths.iter()
+            .map(|path| Page::from_disk(path, dir)).filter(page_ok).collect();
 
         // debug notes
         /*
