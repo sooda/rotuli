@@ -1,0 +1,11 @@
+{% extends "base-fi.html" %}
+{% block content %}
+	{{ content | safe }}
+
+	<p>Tämä on blogiartsu. Kaikki vastaavat tässä:</p>
+	<ul>
+		<ul>{% for p in site.groups["blog"].pages | filter(attribute="meta.language", value="fi") %}
+			<li><a href="{{ p.url }}/">{{ p.title }}</a></li>{% endfor %}
+		</ul>
+	</ul>
+{% endblock content %}

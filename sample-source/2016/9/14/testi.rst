@@ -1,5 +1,5 @@
 ok: true
-template: page-fi.html
+template: blog-fi.html
 language: fi
 blog: true
 category: [elukat, kielitesti ja monta kategoriaa]

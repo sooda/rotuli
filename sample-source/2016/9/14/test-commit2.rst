@@ -1,5 +1,6 @@
 ok: true
-template: page-en.html
+blog: true
+template: blog-en.html
 language: en
 category: [meta]
 

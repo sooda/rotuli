@@ -1,0 +1,11 @@
+{% extends "base-en.html" %}
+{% block content %}
+	{{ content | safe }}
+
+	<p>This is a blog entry. All of them here:</p>
+	<ul>
+		<ul>{% for p in site.groups["blog"].pages | filter(attribute="meta.language", value="en") %}
+			<li><a href="{{ p.url }}/">{{ p.title }}</a></li>{% endfor %}
+		</ul>
+	</ul>
+{% endblock content %}
