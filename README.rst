@@ -46,7 +46,8 @@ Core features
 * Fast incremental builds for iterative work and minimized waste
 * Rendering some of the input files through templates
 * Arbitrary metadata embedded in the source files, passed to the templates with minimal magic
-* Content groups (crossreferences in the metadata)
+* Content groups based on collecting pages by metadata keys
+* (crossreferences in the metadata?)
 * Draft metadata key for excluding content unless specified
 
 Implicit features
@@ -58,6 +59,7 @@ For example:
 * Multilingual content: use the metadata and groups to link originals and translations together
 * Categories aka tags aka keywords: again, group content together in the metadata and use templates to list them
 * Automatic by-date groups to list content (e.g., blog posts) based on year, month or day
+* Listings of page kinds such as blog entries, tutorials, project entries via the content groups
 * Links to next and previous pages in a collection based on the current page index in a group
 
 Why
