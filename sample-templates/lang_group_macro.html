@@ -1,0 +1,11 @@
+{% macro translation_link(language, description_text) %}
+{% if page.meta.translation_key is defined %}
+	{# (note that no default of [] needed because at least the current page exists) #}
+	{% set translation_page = site.groups["translation_key"].pages
+	   | filter(attribute="meta.translation_key", value=page.meta.translation_key)
+	   | filter(attribute="meta.language", value=language) | first %}
+	{% if translation_page %}
+	<li>{{ description_text }}<a href="{{ translation_page.url }}">{{ translation_page.title }}</a></li>
+	{%- endif %}
+{%- endif %}
+{% endmacro translation_link %}

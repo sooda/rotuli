@@ -8,6 +8,7 @@ original: /2016/9/14/testi
 category: [animals]
 title: woof phoof overwritten
 translations: { fi: /2016/9/14/testi }
+translation_key: /2016/9/14/testi
 
 puppies are awesome
 ===================

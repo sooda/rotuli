@@ -1,6 +1,7 @@
 ok: true
 template: page-fi.html
 language: fi
+translation_key: indexpage
 
 Esimerkkisivusto
 ================

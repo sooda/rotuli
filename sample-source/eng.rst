@@ -3,6 +3,7 @@ template: page-en.html
 language: en
 original: /
 category: [meta, front]
+translation_key: indexpage
 
 Sample website
 ==============
