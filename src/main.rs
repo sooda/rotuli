@@ -14,7 +14,7 @@ use std::env;
 use std::path::{Path, PathBuf};
 use std::fs::{File, create_dir_all};
 use std::io::{Read, Write};
-use std::collections::{BTreeSet, BTreeMap};
+use std::collections::{BTreeSet, BTreeMap, HashMap};
 use std::iter::FromIterator;
 use std::fmt;
 use serde::Serialize;
@@ -465,10 +465,9 @@ fn rstrender(s: &str) -> (String, String) {
 
 // Array([Array([String("x")]), Array([String("y")]), Array([String("z"), String("w")])
 // into Array([String("x"), String("y"), String("z"), String("w")])
-fn flatten_array(v: &tera::Value,
-                 _args: &std::collections::HashMap<String, tera::Value>)
+fn flatten_array(value: &tera::Value, _args: &HashMap<String, tera::Value>)
 -> tera::Result<tera::Value> {
-    if let tera::Value::Array(items) = v {
+    if let tera::Value::Array(items) = value {
         let flattened: Vec<tera::Value> = items.into_iter()
             .flat_map(|inner_array_val: &tera::Value| {
                 inner_array_val.as_array().expect(
@@ -481,6 +480,59 @@ fn flatten_array(v: &tera::Value,
     }
 }
 
+fn get_json_pointer(key: &str) -> String {
+    ["/", &key.replace(".", "/")].join("")
+}
+
+fn before_attr(value: &tera::Value, args: &HashMap<String, tera::Value>)
+-> tera::Result<tera::Value> {
+    let arr = tera::try_get_value!("before_attr", "value", Vec<tera::Value>, value);
+    if arr.is_empty() {
+        return Ok(tera::Value::Null);
+    }
+
+    let key = match args.get("attribute") {
+        Some(val) => tera::try_get_value!("before_attr", "attribute", String, val),
+        None => return Err(tera::Error::msg("The `before_attr` filter has to have an `attribute` argument")),
+    };
+
+    let val_lookup = match args.get("value") {
+        Some(val) => val,
+        None => return Err(tera::Error::msg("The `before_attr` filter has to have an `value` argument")),
+    };
+
+    let json_pointer = get_json_pointer(&key);
+    let foundpos = arr.iter().position(|elem| elem.pointer(&json_pointer).unwrap() == val_lookup);
+
+    foundpos.ok_or(tera::Error::msg("before_attr lookup failed"))
+        .map(|index| index.checked_sub(1).and_then(|i| arr.get(i).cloned()).unwrap_or(tera::Value::Null))
+}
+
+fn after_attr(value: &tera::Value,
+               args: &std::collections::HashMap<String, tera::Value>)
+-> tera::Result<tera::Value> {
+    let arr = tera::try_get_value!("after_attr", "value", Vec<tera::Value>, value);
+    if arr.is_empty() {
+        return Ok(tera::Value::Null);
+    }
+
+    let key = match args.get("attribute") {
+        Some(val) => tera::try_get_value!("after_attr", "attribute", String, val),
+        None => return Err(tera::Error::msg("The `after_attr` filter has to have an `attribute` argument")),
+    };
+
+    let val_lookup = match args.get("value") {
+        Some(val) => val,
+        None => return Err(tera::Error::msg("The `after_attr` filter has to have an `value` argument")),
+    };
+
+    let json_pointer = get_json_pointer(&key);
+    let foundpos = arr.iter().position(|elem| elem.pointer(&json_pointer).unwrap() == val_lookup);
+
+    foundpos.ok_or(tera::Error::msg("after_attr lookup failed"))
+        .map(|index| arr.get(index + 1).cloned().unwrap_or(tera::Value::Null))
+}
+
 fn main() {
     let source = &env::args().nth(1).unwrap();
     let output = &env::args().nth(2).unwrap();
@@ -488,6 +540,8 @@ fn main() {
 
     let mut tera = Tera::new("sample-templates/**/*.html").unwrap();
     tera.register_filter("flatten_array", flatten_array);
+    tera.register_filter("before_attr", before_attr);
+    tera.register_filter("after_attr", after_attr);
 
     println!("--- yiss! groups ---");
 

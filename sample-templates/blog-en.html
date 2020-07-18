@@ -8,4 +8,18 @@
 			<li><a href="{{ p.url }}/">{{ p.title }}</a></li>{% endfor %}
 		</ul>
 	</ul>
+
+	<p>entry before the current one: {% set prev_page = site.groups["blog"].pages
+	   | filter(attribute="meta.language", value="en")
+	   | before_attr(attribute="url", value=page.url) %}
+	   {%- if prev_page %}<a href="{{ prev_page.url }}">{{ prev_page.title }}</a>
+	{%- else %}(this is the first one)
+	{%- endif %}</p>
+
+	<p>entry after the current one: {% set next_page = site.groups["blog"].pages
+	   | filter(attribute="meta.language", value="en")
+	   | after_attr(attribute="url", value=page.url) %}
+	{%- if next_page %}<a href="{{ next_page.url }}">{{ next_page.title }}</a>
+	{%- else %}(this is the last one)
+	{%- endif %}</p>
 {% endblock content %}
