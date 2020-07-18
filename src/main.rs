@@ -326,6 +326,12 @@ impl Site {
             groups: BTreeMap<&'a str, GroupContext<'a>>,
         }
 
+        #[derive(Debug, Serialize, Clone)]
+        struct RefContext<'a> {
+            // this should be a map instead, but just one metadata key is enough for prototyping
+            original: Vec<&'a PageContext<'a>>,
+        }
+
         // XXX: this is here for now to remind about a possible additional post-load draft flag
         let page_ok = |p: &&Page| p.metadata.get("ok")
             .map(|x| x.as_bool().unwrap())
@@ -354,17 +360,29 @@ impl Site {
             groups: groups_cx,
         };
 
+        let mut refs_cxs = vec![RefContext { original: vec![] }; pages_cx.len()];
+        for (j, p) in ok_pages().enumerate() {
+            if let Some(ref_target) = p.metadata.get("original").map(|x| x.as_str().unwrap()) {
+                refs_cxs[self.page_by_url(ref_target).0].original.push(&pages_cx[j]);
+            }
+            // loop p's metadata keys/values, find somehow typed page refs in values...
+        }
+        let refs_cxs = refs_cxs;
+
         let output_dir = Path::new(output_dir);
-        for (_i, p) in ok_pages().enumerate() {
+        for (i, p) in ok_pages().enumerate() {
             println!("render {:?} to {:?} using {}", p.path, p.url_file(), p.template_name());
 
             let mut cx = Context::new();
 
-            let page_cx = &site_cx.pages[_i];
+            let page_cx = &site_cx.pages[i];
+            let refs_cx = &refs_cxs[i];
+
             cx.insert("site", &site_cx);
             cx.insert("page", &page_cx);
             cx.insert("content", &p.content_rendered);
             cx.insert("meta", &page_cx.meta);
+            cx.insert("refs", &refs_cx);
 
             let s = tera.render(p.template_name(), &cx).unwrap();
 

@@ -8,3 +8,7 @@
 {% if meta.original %}<li>fi: <a href="{{ meta.original }}">{{ site.pages_by_url[meta.original].title }}</a></li>{% endif %}
 	<li><a href="/potato/">meal</a></li>
 {% endblock navibar %}
+
+{# the language would be "backwards" because it's the orig that points to this page as a link called "en":
+{% if refs.translations.en %}<li>fi: <a href="{{ refs.translations.en.url }}">{{ refs.translations.en.title}}</a></li>{% endif %}
+#}

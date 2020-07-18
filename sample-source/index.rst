@@ -1,7 +1,6 @@
 ok: true
 template: page-fi.html
 language: fi
-translations: { en: /eng }
 
 Esimerkkisivusto
 ================
