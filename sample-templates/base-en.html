@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% import "lang_group_macro.html" as lang_group %}
+{% import "base_macros.html" as base_macros %}
 {% block lang %}en{% endblock lang %}
 {% block indexlang %}eng/{% endblock indexlang %}
 {% block title %}{% if page.title %}{{ page.title }} - {% endif %}a blog{% endblock title %}
@@ -7,7 +7,7 @@
 {% block tagline %}this text is demo for language groups{% endblock tagline %}
 {% block navibar %}
 {% if meta.original %}<li>fi: <a href="{{ meta.original }}">{{ site.pages_by_url[meta.original].title }}</a></li>{% endif %}
-{{ lang_group::translation_link(language="fi", description_text="fi via group: ") }}
+{{ base_macros::translation_link(language="fi", description_text="fi via group: ") }}
 	<li><a href="/potato/">meal</a></li>
 {% endblock navibar %}
 

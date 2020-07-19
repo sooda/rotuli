@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% import "lang_group_macro.html" as lang_group %}
+{% import "base_macros.html" as base_macros %}
 {% block lang %}fi{% endblock lang %}
 {% block title %}{% if page.title %}{{ page.title }} - {% endif %}jonkinmoinen blogi{% endblock title %}
 {% block headline %}jonkinmoinen blogi{% endblock headline %}
@@ -12,5 +12,5 @@
 {% if en_page %}
 	<li>en via refs: <a href="{{ en_page.url }}">{{ en_page.title }}</a></li>
 {%- endif %}
-{{ lang_group::translation_link(language="en", description_text="en via group: ") }}
+{{ base_macros::translation_link(language="en", description_text="en via group: ") }}
 {% endblock navibar %}
