@@ -546,7 +546,18 @@ fn main() {
     let output = &env::args().nth(2).unwrap();
     let site = Site::new(source);
 
-    let mut tera = Tera::new("sample-templates/**/*.html").unwrap();
+    let tera = Tera::new("sample-templates/**/*.html");
+    let mut tera = match tera {
+        Ok(t) => t,
+        Err(e) => {
+            if let tera::ErrorKind::Msg(s) = e.kind {
+                println!("rotuli: templates failed: {}", s);
+            } else {
+                println!("rotuli: templates failed: {:?}", e);
+            }
+            return;
+        }
+    };
     tera.register_filter("flatten_array", flatten_array);
     tera.register_filter("before_attr", before_attr);
     tera.register_filter("after_attr", after_attr);
