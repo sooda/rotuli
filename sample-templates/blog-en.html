@@ -3,6 +3,7 @@
 {% block content %}
 	<p>filed under: {{ blog_macros::category_listing(page=page, language="en",
 	       base_url="/category/", none_description="no categories, how unique") }}</p>
+	<p>It's a bit unfortunate that this sort of metadata cannot easily be rendered under the document heading without falling to the bottom of the page after all content. Not being able to massage the content itself is more pure, but the page title is kind of special. What to do?</p>
 
 	{{ content | safe }}
 
