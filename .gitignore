@@ -1,4 +1,4 @@
-*.sw[pon]
+*.sw[ponml]
 *.vis
 
 Cargo.lock
