@@ -3,6 +3,13 @@
 	<p>kaikki liittyy: {% if meta.category is defined -%}
 	{%- for c in meta.category -%}
 		{%- if not loop.first %}, {% endif %}<a href="/kategoria/{{ c }}/">{{ c }}</a>
+
+		{%- set cat_names = site.groups["category_name"].pages
+		    | filter(attribute="meta.language", value="fi")
+			| map(attribute="meta.category_name") -%}
+		{%- if not cat_names is containing(c) -%}
+		{{ throw(message="category `" ~ c ~ "' appears to be missing its page") }}
+		{%- endif -%}
 	{%- endfor -%}
 	{%- else %}paitsi että ei{% endif %}</p>
 

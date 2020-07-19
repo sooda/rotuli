@@ -6,7 +6,7 @@ blog: true
 # relative url, yay
 original: /2016/9/14/testi
 created_at: 2016-09-14
-category: [animals]
+category: [animals, multi-worded-category]
 title: woof phoof overwritten
 translations: { fi: /2016/9/14/testi }
 translation_key: /2016/9/14/testi
