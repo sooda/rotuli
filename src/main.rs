@@ -504,7 +504,7 @@ fn before_attr(value: &tera::Value, args: &HashMap<String, tera::Value>)
     let json_pointer = get_json_pointer(&key);
 
     let value = arr.iter().zip(arr.iter().skip(1))
-        .find(|&(_, current)| current.pointer(&json_pointer).unwrap() == val_lookup)
+        .find(|&(_, current)| current.pointer(&json_pointer).map_or(false, |value| value == val_lookup))
         .map(|(preceding, _)| preceding.clone()).unwrap_or(tera::Value::Null);
 
     // An unmatched attr or a match at the first one (with no previous) is never an error; null is
@@ -533,7 +533,7 @@ fn after_attr(value: &tera::Value,
     let json_pointer = get_json_pointer(&key);
 
     let value = arr.iter().zip(arr.iter().skip(1))
-        .find(|&(current, _)| current.pointer(&json_pointer).unwrap() == val_lookup)
+        .find(|&(current, _)| current.pointer(&json_pointer).map_or(false, |value| value == val_lookup))
         .map(|(_, following)| following.clone()).unwrap_or(tera::Value::Null);
 
     // An unmatched attr or a match at the last one (with no next) is never an error; null is
