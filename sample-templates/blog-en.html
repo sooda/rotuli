@@ -1,17 +1,8 @@
 {% extends "base-en.html" %}
+{% import "blog_macros.html" as blog_macros %}
 {% block content %}
-	<p>filed under: {% if meta.category is defined -%}
-	{%- for c in meta.category -%}
-		{%- if not loop.first %}, {% endif %}<a href="/category/{{ c }}/">{{ c }}</a>
-
-		{%- set cat_names = site.groups["category_name"].pages
-		    | filter(attribute="meta.language", value="en")
-			| map(attribute="meta.category_name") -%}
-		{%- if not cat_names is containing(c) -%}
-		{{ throw(message="category `" ~ c ~ "' appears to be missing its page") }}
-		{%- endif -%}
-	{%- endfor -%}
-	{%- else %}no categories, how unique{% endif %}</p>
+	<p>filed under: {{ blog_macros::category_listing(language="en",
+	       base_url="/category/", none_description="no categories, how unique") }}</p>
 
 	{{ content | safe }}
 
