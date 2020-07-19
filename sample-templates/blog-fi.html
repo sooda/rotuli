@@ -1,7 +1,7 @@
 {% extends "base-fi.html" %}
 {% import "blog_macros.html" as blog_macros %}
 {% block content %}
-	<p>kaikki liittyy: {{ blog_macros::category_listing(language="fi",
+	<p>kaikki liittyy: {{ blog_macros::category_listing(page=page, language="fi",
 	       base_url="/kategoria/", none_description="paitsi että ei") }}</p>
 
 	{{ content | safe }}

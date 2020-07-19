@@ -1,0 +1,8 @@
+{% extends "base-fi.html" %}
+{% import "index_macros.html" as index_macros %}
+{% block content %}
+	{{ content | safe }}
+
+	{{ index_macros::blog_preview_listing(language="fi",
+	   category_base_url="/kategoria/", category_text="kategorioilla: ", category_none_description="(ei)") }}
+{% endblock content %}

@@ -1,7 +1,7 @@
 {% extends "base-en.html" %}
 {% import "blog_macros.html" as blog_macros %}
 {% block content %}
-	<p>filed under: {{ blog_macros::category_listing(language="en",
+	<p>filed under: {{ blog_macros::category_listing(page=page, language="en",
 	       base_url="/category/", none_description="no categories, how unique") }}</p>
 
 	{{ content | safe }}

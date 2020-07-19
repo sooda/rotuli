@@ -311,6 +311,7 @@ impl Site {
             url: &'a str,
             title: &'a str,
             meta: &'a serde_yaml::Mapping,
+            content: &'a str,
         }
 
         #[derive(Debug, Serialize)]
@@ -345,6 +346,7 @@ impl Site {
                 url: p.url.to_str().unwrap(),
                 title: p.title(),
                 meta: &p.metadata.data,
+                content: &p.content_rendered,
             }).collect::<Vec<_>>();
 
         let pages_by_url_cx = pages_cx.iter().map(|p| (&p.url as &str, p)).collect();

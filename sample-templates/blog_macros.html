@@ -1,7 +1,7 @@
-{% macro category_listing(language, base_url, none_description) -%}
-	{%- if meta.category is defined -%}
-		{%- for c in meta.category -%}
-			{%- if not loop.first %}, {% endif %}<a href="/{{ base_url }}/{{ c }}/">{{ c }}</a>
+{% macro category_listing(page, language, base_url, none_description) -%}
+	{%- if page.meta.category is defined -%}
+		{%- for c in page.meta.category -%}
+			{%- if not loop.first %}, {% endif %}<a href="{{ base_url }}{{ c }}/">{{ c }}</a>
 
 			{%- set cat_names = site.groups["category_name"].pages
 				| filter(attribute="meta.language", value=language)

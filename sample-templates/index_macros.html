@@ -1,0 +1,20 @@
+{% import "blog_macros.html" as blog_macros %}
+{% macro blog_preview_listing(language, category_base_url, category_text, category_none_description) -%}
+	{% set blog_entries = site.groups["blog"].pages
+		| filter(attribute="meta.language", value=language)
+		| sort(attribute="title")
+		| sort(attribute="meta.created_at") | reverse | slice(end=2) %}
+
+	<ul>
+	{%- for p in blog_entries -%}
+		<li><a href="{{ p.url }}/">{{ p.title }}</a>
+			{{ p.meta.created_at }}
+			{{ category_text}}{{
+				blog_macros::category_listing(page=p, language=language,
+				base_url=category_base_url, none_description=category_none_description) }}
+			{# TODO: add an rstrender filter and pass the truncated string to it? or take the rendered bit and cut to first "</p>"? #}
+			{{ p.content | truncate(length=84) | safe }}
+		</li>
+{% endfor %}
+	</ul>
+{% endmacro blog_preview_listing %}
