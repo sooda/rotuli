@@ -12,8 +12,7 @@
 			{{ category_text}}{{
 				blog_macros::category_listing(page=p, language=language,
 				base_url=category_base_url, none_description=category_none_description) }}
-			{# TODO: add an rstrender filter and pass the truncated string to it? or take the rendered bit and cut to first "</p>"? #}
-			{{ p.content | truncate(length=84) | safe }}
+			{{ p.summary | safe }}
 		</li>
 {% endfor %}
 	</ul>

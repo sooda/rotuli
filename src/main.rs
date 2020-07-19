@@ -86,6 +86,7 @@ struct Page {
     metadata: Metadata,
     content: String,
     content_rendered: String,
+    summary_rendered: String,
     // filled after initial page construction
     groups: Vec<GroupReference>,
     translations: Vec<PageReference>
@@ -127,15 +128,16 @@ impl Page {
         let metadata = Metadata::from_string(&data[..split_pos]);
         let content = &data[split_pos + 2..];
         let url = make_url(path, root);
-        let (rendered, title) = rstrender(content);
+        let render_result = rstrender(content);
 
         Page {
             path: path.to_path_buf(),
             url: url,
-            title: title,
+            title: render_result.title,
             metadata: metadata,
             content: content.to_string(),
-            content_rendered: rendered,
+            content_rendered: render_result.body,
+            summary_rendered: render_result.summary,
             groups: vec![],
             translations: vec![]
         }
@@ -311,6 +313,7 @@ impl Site {
             url: &'a str,
             title: &'a str,
             meta: &'a serde_yaml::Mapping,
+            summary: &'a str,
             content: &'a str,
         }
 
@@ -347,6 +350,7 @@ impl Site {
                 title: p.title(),
                 meta: &p.metadata.data,
                 content: &p.content_rendered,
+                summary: &p.summary_rendered,
             }).collect::<Vec<_>>();
 
         let pages_by_url_cx = pages_cx.iter().map(|p| (&p.url as &str, p)).collect();
@@ -394,7 +398,7 @@ impl Site {
     }
 }
 
-fn document_title(document: &document_tree::Document) -> String {
+fn top_level_rst_section(document: &document_tree::Document) -> &document_tree::Section {
     use document_tree::{
         element_categories as ec
     };
@@ -430,6 +434,15 @@ fn document_title(document: &document_tree::Document) -> String {
         _ => panic!("strange section substructure, do you have just one paragraph there?")
     };
 
+    section_obj
+}
+
+fn document_title(document: &document_tree::Document) -> String {
+    use document_tree::{
+        element_categories as ec
+    };
+    let section_obj = top_level_rst_section(document);
+
     let first_element = &section_obj.children().first()
         .expect("how did you make a section with no content?");
 
@@ -450,19 +463,61 @@ fn document_title(document: &document_tree::Document) -> String {
     title_text.to_string()
 }
 
-fn rstrender(s: &str) -> (String, String) {
-    if let Ok(document) = rst_parser::parse(s) {
-        let mut rendered_bytes = Vec::new();
-        let _rend_res = rst_renderer::render_html(&document, &mut rendered_bytes, false);
-        let rendered = String::from_utf8(rendered_bytes).unwrap();
+fn first_document_paragraph(document: &document_tree::Document) -> String {
+    use document_tree::{
+        element_categories as ec
+    };
+    let section_obj = top_level_rst_section(document);
 
-        let title = document_title(&document);
-
-        (rendered, title)
+    // the title is expected to be at index 0; just see what immediately follows it
+    let element: Option<&ec::StructuralSubElement> = section_obj.children().get(1);
+    if let Some(element) = element {
+        if let ec::StructuralSubElement::SubStructure(x) = element {
+            // could also SubStructure(box x) = element but that's an unstable feature, will
+            // revisit. https://github.com/rust-lang/rust/issues/29641
+            if let ec::SubStructure::BodyElement(y) = &**x {
+                if let ec::BodyElement::Paragraph(_) = &**y {
+                    let mut rendered_bytes = Vec::new();
+                    let doc = document_tree::Document::with_children(vec![element.clone()]);
+                    rst_renderer::render_html(&doc, &mut rendered_bytes, false).unwrap();
+                    String::from_utf8(rendered_bytes).unwrap()
+                } else {
+                    // Perhaps a list or something, behaviour would be ambiguous for now
+                    "".to_string()
+                }
+            } else {
+                // Perhaps an immediate subheading; ambiguous what to do. Recursing to its section
+                // might be a good idea, but not necessarily intended by the author.
+                "".to_string()
+            }
+        } else {
+            panic!("what is this?")
+        }
     } else {
-        // TODO: error handling and verbosity
-        ("".to_string(), "".to_string())
+        // the section has no children after the title
+        "".to_string()
     }
+}
+
+struct RenderedRst {
+    title: String,
+    summary: String,
+    body: String,
+}
+
+fn rstrender(s: &str) -> RenderedRst {
+    if s == "" {
+        // some pages might not need any body content if it comes from templates only
+        return RenderedRst { title: "".to_string(), summary: "".to_string(), body: "".to_string() }
+    }
+    let document = rst_parser::parse(s).unwrap();
+    let title = document_title(&document);
+    let summary = first_document_paragraph(&document);
+    let mut rendered_bytes = Vec::new();
+    rst_renderer::render_html(&document, &mut rendered_bytes, false).unwrap();
+    let body = String::from_utf8(rendered_bytes).unwrap();
+
+    RenderedRst { title, summary, body }
 }
 
 // Array([Array([String("x")]), Array([String("y")]), Array([String("z"), String("w")])
