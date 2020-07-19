@@ -1,11 +1,10 @@
 {% extends "base-fi.html" %}
 {% block content %}
 	<p>kaikki liittyy: {% if meta.category is defined -%}
-	<a href="/kategoria/{{ meta.category | first }}/">{{ meta.category | first }}</a>
-	{%- for c in meta.category | slice(start=1) -%}
-	, <a href="/kategoria/{{ c }}/">{{ c }}</a>
-	{% endfor %}
-	{% else %}paitsi että ei{% endif %}</p>
+	{%- for c in meta.category -%}
+		{%- if not loop.first %}, {% endif %}<a href="/kategoria/{{ c }}/">{{ c }}</a>
+	{%- endfor -%}
+	{%- else %}paitsi että ei{% endif %}</p>
 
 	{{ content | safe }}
 
