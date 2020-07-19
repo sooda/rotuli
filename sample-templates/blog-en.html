@@ -2,22 +2,27 @@
 {% block content %}
 	{{ content | safe }}
 
-	<p>This is a blog entry. All of them here:</p>
+	<p>This is a blog entry from {{ page.meta.created_at | default(value="sometime") }}. All of them here:</p>
+	{# the default logic above and in the listing are not very useful because
+	the sort would explode if any page wouldn't have the meta.created_at
+	attribute... #}
+	{% set blog_entries = site.groups["blog"].pages
+		| filter(attribute="meta.language", value="en")
+		| sort(attribute="title")
+		| sort(attribute="meta.created_at") %}
 	<ul>
-		<ul>{% for p in site.groups["blog"].pages | filter(attribute="meta.language", value="en") %}
-			<li><a href="{{ p.url }}/">{{ p.title }}</a></li>{% endfor %}
+		<ul>{% for p in blog_entries %}
+			<li><a href="{{ p.url }}/">{{ p.title }}</a> ({{ p.meta.created_at | default(value="fix date!") }})</li>{% endfor %}
 		</ul>
 	</ul>
 
-	<p>entry before the current one: {% set prev_page = site.groups["blog"].pages
-	   | filter(attribute="meta.language", value="en")
+	<p>entry before the current one: {% set prev_page = blog_entries
 	   | before_attr(attribute="url", value=page.url) %}
 	   {%- if prev_page %}<a href="{{ prev_page.url }}">{{ prev_page.title }}</a>
 	{%- else %}(this is the first one)
 	{%- endif %}</p>
 
-	<p>entry after the current one: {% set next_page = site.groups["blog"].pages
-	   | filter(attribute="meta.language", value="en")
+	<p>entry after the current one: {% set next_page = blog_entries
 	   | after_attr(attribute="url", value=page.url) %}
 	{%- if next_page %}<a href="{{ next_page.url }}">{{ next_page.title }}</a>
 	{%- else %}(this is the last one)

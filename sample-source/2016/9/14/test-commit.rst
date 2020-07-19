@@ -5,6 +5,7 @@ language: en
 blog: true
 # relative url, yay
 original: /2016/9/14/testi
+created_at: 2016-09-14
 category: [animals]
 title: woof phoof overwritten
 translations: { fi: /2016/9/14/testi }
