@@ -47,7 +47,6 @@ Core features
 * Rendering some of the input files through templates
 * Arbitrary metadata embedded in the source files, passed to the templates with minimal magic
 * Content groups based on collecting pages by metadata keys
-* (crossreferences in the metadata?)
 * Draft metadata key for excluding content unless specified
 
 Implicit features

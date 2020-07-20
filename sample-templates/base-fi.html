@@ -7,10 +7,5 @@
 {% block navibar %}
 {% if meta.translations.en %}<li>en: <a href="{{ meta.translations.en }}">{{ site.pages_by_url[meta.translations.en].title }}</a></li>{% endif %}
 	<li><a href="/peruna/">ateria</a></li>
-{# XXX: or page.refs.original so that other pages' refs can be accessed? #}
-{% set en_page = refs.original | default(value=[]) | filter(attribute="meta.language", value="en") | first %}
-{% if en_page %}
-	<li>en via refs: <a href="{{ en_page.url }}">{{ en_page.title }}</a></li>
-{%- endif %}
 {{ base_macros::translation_link(language="en", description_text="en via group: ") }}
 {% endblock navibar %}

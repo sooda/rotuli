@@ -1,4 +1,4 @@
-{% macro translation_link(language, description_text) %}
+{% macro translation_link(language, description_text) -%}
 {% if page.meta.translation_key is defined %}
 	{# (note that no default of [] needed because at least the current page exists) #}
 	{% set translation_page = site.groups["translation_key"].pages
@@ -8,4 +8,67 @@
 	<li>{{ description_text }}<a href="{{ translation_page.url }}">{{ translation_page.title }}</a></li>
 	{%- endif %}
 {%- endif %}
+{#
+These language collections consider all copies of a document in various languages equal.
+
+The translation key can be anything as long as it's unique for each document group, but it should
+be the url of one of those translation variants though for consistency so that would still be a
+special page. Perhaps with yaml tag support the url wouldn't need to be repeated in the page that
+has the same url; something like "translation_key: !pageref self".
+
+Another way to build translations would go in one of these two ways, having a "master copy"
+in one language and "duplicates" in other languages.
+
+1) Use the translated pages to link to the original version (*) in the metadata and have this in
+translated templates:
+
+    {% if meta.original %}<li>in orig language: <a href="{{ meta.original }}">{{
+            site.pages
+            | filter(attribute="url", value=meta.original)
+            | first | get(key="title") }}</a></li>{% endif %}
+
+Or do a more efficient lookup:
+
+    {% if meta.original %}<li>in orig language: <a href="{{ meta.original }}">{{
+            site.pages_by_url[meta.original].title }}</a></li>{% endif %}
+
+Then link back to various languages in the original page:
+
+    {% set en_page = refs.original | default(value=[])
+        | filter(attribute="meta.language", value="en") | first %}
+    {% if en_page %}
+        <li>in English: <a href="{{ en_page.url }}">{{ en_page.title }}</a></li>
+    {%- endif %}
+
+2) Use the original page to link to the translated versions:
+
+    {% if meta.translations.en %}<li>in English: <a href="{{ meta.translations.en }}">{{
+            site.pages_by_url[meta.translations.en].title }}</a></li>{% endif %}
+
+Then link back to the original in the translated pages:
+
+    {% if refs.translations.en %}<li>in orig language: <a href="{{ refs.translations.en.url }}">{{
+            refs.translations.en.title }}</a></li>{% endif %}
+
+These page links are plain strings of the urls they link to. When yaml-rust gets support for
+tags (https://github.com/chyh1990/yaml-rust/issues/35), they could be parsed into direct page
+references, so the lookups by url wouldn't be necessary. Like so:
+
+    {% if meta.translations.en %}<li>in English: <a href="{{ meta.translations.en.url }}">{{
+            meta.translations.en.title }}</a></li>{% endif %}
+
+(*): assuming that all pages were originally written in the same language. Even if not, use the
+     original to link to one specific language; then it's not really about "original" versions but
+     e.g. "Finnish" versions. Doesn't matter the tech.
+
+These assume that the core code supports page references when it sees urls that match existing
+pages. For a "meta.foo" in page A that links to page B, B's context would have "refs.foo" with the
+value of A's url to know where a link of that metadata key came from.
+
+Without such core support, bidirectional language links would still be easy to do; the backrefs
+would just need to be manually maintained in the metadata, for example by providing both the
+"original" strings as above and the "translations" maps as above in either sides. With just a
+bilingual website, the links could be more concrete, e.g.: "finnish: /etusivu" in frontpage.rst
+and "english: /frontpage" in etusivu.rst.
+#}
 {% endmacro translation_link %}
