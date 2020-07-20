@@ -176,8 +176,9 @@ impl Page {
     }
 }
 
-fn discover_source(pathname: &str) -> Vec<PathBuf> {
-    let paths = glob(&*(pathname.to_string() + "/**/*.rst")).expect("invalid search pattern");
+fn discover_source(source: &Path) -> Vec<PathBuf> {
+    let pathname = source.to_str().expect("only UTF-8 directories please").to_owned();
+    let paths = glob(&*(pathname + "/**/*.rst")).expect("invalid search pattern");
     // silently ignore Err items, unreadable files are skipped on purpose
     // (FIXME: verbose mode to print them)
     let pathbufs: Vec<_> = paths.filter_map(|x| x.ok()).collect();
@@ -199,18 +200,17 @@ struct Site {
 }
 
 impl Site {
-    fn new(dir: &str) -> Self {
+    fn new(dir: PathBuf) -> Self {
         // Load source data as pages with just metadata properly initialized
-        let srcpaths = discover_source(dir);
-        let dir = Path::new(dir);
+        let srcpaths = discover_source(&dir);
         let page_ok = |p: &Page| p.metadata.get_bool_or_false("ok");
         let pages: Vec<_> = srcpaths.iter()
-            .map(|path| Page::from_disk(path, dir))
+            .map(|path| Page::from_disk(path, &dir))
             .filter(page_ok)
             .collect();
 
         // Move pages to site, construct groups
-        let mut site = Site { directory: dir.to_path_buf(), pages: pages, groups: vec![] };
+        let mut site = Site { directory: dir, pages: pages, groups: vec![] };
         let group_names = BTreeSet::from_iter(
             site.pages.iter()
             .map(|p| p.metadata.keys())
@@ -260,7 +260,7 @@ impl Site {
             .map(|(i, _)| GroupReference(i))
     }
 
-    fn render(&self, tera: &Tera, output_dir: &str) {
+    fn render(&self, tera: &Tera, output_dir: &Path) {
         #[derive(Debug, Serialize)]
         struct PageContext<'a> {
             path: &'a str,
@@ -315,7 +315,6 @@ impl Site {
             groups: groups_cx,
         };
 
-        let output_dir = Path::new(output_dir);
         for (i, p) in ok_pages().enumerate() {
             println!("render {:?} to {:?} using {}", p.path, p.output_path(), p.template_name());
 
@@ -567,7 +566,7 @@ struct Opt {
 
 fn main() {
     let opt = Opt::from_args();
-    let site = Site::new(opt.source_path.to_str().unwrap());
+    let site = Site::new(opt.source_path);
 
     if site.is_empty() {
         panic!("no files found");
@@ -589,5 +588,5 @@ fn main() {
     tera.register_filter("before_attr", before_attr);
     tera.register_filter("after_attr", after_attr);
 
-    site.render(&tera, opt.output_path.to_str().unwrap());
+    site.render(&tera, &opt.output_path);
 }
