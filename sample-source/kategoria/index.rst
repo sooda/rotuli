@@ -6,3 +6,5 @@ kaikki kategoriat
 -----------------
 
 Tässähän näitä.
+
+Demo for index page elsewhere than the root.

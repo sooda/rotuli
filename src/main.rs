@@ -110,6 +110,8 @@ fn write_file(p: &Path, s: &str) {
     f.write_all(s.as_bytes()).unwrap();
 }
 
+// ("src/foo/some-page.rst", "src") -> "/foo/some-page"
+// ("src/foo/some-page.xml.rst", "src") -> "/foo/some-page.xml"
 fn make_url(path: &Path, root: &Path) -> PathBuf {
     let formatted = if path.ends_with("index.rst") {
         // just strip the index part off
@@ -120,6 +122,7 @@ fn make_url(path: &Path, root: &Path) -> PathBuf {
     };
     let child = formatted.strip_prefix(root).unwrap();
 
+    // perhaps should return a string, but a path is more easily modified later if necessary
     Path::new("/").join(child)
 }
 
@@ -146,23 +149,29 @@ impl Page {
         }
     }
 
+    // append a slash for things that look like a directory, because those are rendered into
+    // directories for nice things (e.g., avoid linking to the html extension, emphasizing just the
+    // document structure)
     fn display_url(&self) -> String {
-        let as_is = &self.metadata.get_bool_or_false(MAGIC_META_URL_AS_IS);
+        let as_is = self.metadata.get_bool_or_false(MAGIC_META_URL_AS_IS);
 
-        if self.path.ends_with("index.rst") || !as_is {
-            self.url.to_str().unwrap().to_owned() + "/"
+        let as_string = self.url.to_str().expect("only UTF-8 files please").to_owned();
+        // why both though?
+        if as_string == "/" || as_is {
+            as_string
         } else {
-            self.url.to_str().unwrap().to_owned()
+            as_string + "/"
         }
     }
 
-    fn url_file(&self) -> PathBuf {
-        let as_is = &self.metadata.get_bool_or_false(MAGIC_META_URL_AS_IS);
+    fn output_path(&self) -> PathBuf {
+        let as_is = self.metadata.get_bool_or_false(MAGIC_META_URL_AS_IS);
 
-        if *as_is {
-            self.url.strip_prefix("/").unwrap().to_path_buf()
+        let relative = self.url.strip_prefix("/").expect("`/' was added before but now it's gone?");
+        if as_is {
+            relative.to_path_buf()
         } else {
-            self.url.strip_prefix("/").unwrap().join("index.html")
+            relative.join("index.html")
         }
     }
 
@@ -247,16 +256,11 @@ impl Site {
         GroupReference(self.groups.iter().enumerate().find(|&(_, x)| x.name == name).unwrap().0)
     }
 
-    fn page_by_url(&self, url: &str) -> PageReference {
-        PageReference(self.pages.iter().enumerate().find(
-                |&(_, x)| x.url.to_str().unwrap() == url).unwrap().0)
-    }
-
     fn render(&self, tera: &Tera, output_dir: &str) {
         #[derive(Debug, Serialize)]
         struct PageContext<'a> {
             path: &'a str,
-            url: &'a str,
+            url: String,
             title: &'a str,
             meta: &'a serde_yaml::Mapping,
             summary: &'a str,
@@ -284,14 +288,14 @@ impl Site {
         let pages_cx = ok_pages()
             .map(|p| PageContext {
                 path: p.path.to_str().unwrap(),
-                url: p.url.to_str().unwrap(),
+                url: p.display_url(),
                 title: p.title(),
                 meta: &p.metadata.data,
                 content: &p.content_rendered,
                 summary: &p.summary_rendered,
             }).collect::<Vec<_>>();
 
-        let pages_by_url_cx = pages_cx.iter().map(|p| (&p.url as &str, p)).collect();
+        let pages_by_url_cx = pages_cx.iter().map(|p| (p.url.as_str(), p)).collect();
 
         let groups_cx = self.groups.iter().map(|g| (&g.name as &str, GroupContext {
             name: &g.name,
@@ -306,7 +310,7 @@ impl Site {
 
         let output_dir = Path::new(output_dir);
         for (i, p) in ok_pages().enumerate() {
-            println!("render {:?} to {:?} using {}", p.path, p.url_file(), p.template_name());
+            println!("render {:?} to {:?} using {}", p.path, p.output_path(), p.template_name());
 
             let mut cx = Context::new();
 
@@ -334,7 +338,7 @@ impl Site {
                 }
             };
 
-            let outfile = output_dir.join(p.url_file());
+            let outfile = output_dir.join(p.output_path());
             write_file(&outfile, &tpl_rendered);
         }
     }
