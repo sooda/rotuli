@@ -1,5 +1,6 @@
 ok: true
 template: categories-fi.html
+language: fi
 translation_key: /kategoria/
 
 kaikki kategoriat

@@ -1,7 +1,10 @@
 {% macro translation_link(language, description_text) -%}
 {% if page.meta.translation_key is defined %}
+	{%- if page.meta.language is undefined %}
+		{{ throw(message="translation key exists but language does not, url: " ~ page.url) }}
+	{% endif %}
 	{# (note that no default of [] needed because at least the current page exists) #}
-	{% set translations_for_lang = site.groups["translation_key"].pages
+	{%- set translations_for_lang = site.groups["translation_key"].pages
 	   | filter(attribute="meta.translation_key", value=page.meta.translation_key)
 	   | filter(attribute="meta.language", value=language) %}
 	{% set translation_page = translations_for_lang | first %}
