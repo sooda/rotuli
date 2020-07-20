@@ -5,18 +5,19 @@ extern crate serde_yaml;
 extern crate rst_parser;
 extern crate rst_renderer;
 extern crate document_tree;
+extern crate structopt;
 
 use glob::glob;
 
 use tera::{Tera, Context};
 
-use std::env;
 use std::path::{Path, PathBuf};
 use std::collections::{BTreeSet, BTreeMap, HashMap};
 use std::iter::FromIterator;
 use std::fmt;
 use serde::Serialize;
 use document_tree::element_categories::HasChildren;
+use structopt::StructOpt;
 
 // Metadata keys treated in a special way; could use strings in-place, but now they're in a single
 // place here for explicitness.
@@ -555,10 +556,18 @@ fn after_attr(value: &tera::Value,
     Ok(value)
 }
 
+#[derive(Debug, StructOpt)]
+#[structopt(name = "rotuli", about = "The universal document processor")]
+struct Opt {
+    #[structopt(short, long, help = "read document sources from here")]
+    source_path: PathBuf,
+    #[structopt(short, long, help = "write the results here")]
+    output_path: PathBuf,
+}
+
 fn main() {
-    let source = &env::args().nth(1).expect("source arg missing");
-    let output = &env::args().nth(2).expect("dest arg missing");
-    let site = Site::new(source);
+    let opt = Opt::from_args();
+    let site = Site::new(opt.source_path.to_str().unwrap());
 
     if site.is_empty() {
         panic!("no files found");
@@ -580,5 +589,5 @@ fn main() {
     tera.register_filter("before_attr", before_attr);
     tera.register_filter("after_attr", after_attr);
 
-    site.render(&tera, output);
+    site.render(&tera, opt.output_path.to_str().unwrap());
 }
