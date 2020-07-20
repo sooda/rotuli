@@ -317,10 +317,25 @@ impl Site {
             cx.insert("content", &p.content_rendered);
             cx.insert("meta", &page_cx.meta);
 
-            let s = tera.render(p.template_name(), &cx).unwrap();
+            let tpl_rendered = match tera.render(p.template_name(), &cx) {
+                Ok(text) => text,
+                Err(e) => {
+                    println!("rotuli: render failed: {}", p.path.to_string_lossy());
+
+                    println!("{}", e);
+                    let mut e: &dyn std::error::Error = &e;
+                    while let Some(x) = e.source() {
+                        println!("{}", x);
+                        e = x;
+                    }
+
+                    // TODO: propagate error
+                    panic!()
+                }
+            };
 
             let outfile = output_dir.join(p.url_file());
-            write_file(&outfile, &s);
+            write_file(&outfile, &tpl_rendered);
         }
     }
 }
