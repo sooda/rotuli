@@ -1,7 +1,7 @@
 ok: true
 template: allpages-fi.html
 language: fi
-translations: { en: /potato }
+translation_key: /peruna/
 
 kaikenlaista
 ------------

@@ -1,4 +1,5 @@
 template: page-fi.html
+translation_key: /random/
 
 this is not a blog post
 =======================

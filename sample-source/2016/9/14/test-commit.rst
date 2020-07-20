@@ -4,12 +4,10 @@ language: en
 # don't need to filter by this when listing blogs, just list all that contain the key "blog" in their metadata
 blog: true
 # relative url, yay
-original: /2016/9/14/testi
 created_at: 2016-09-14
 category: [animals, multi-worded-category]
 title: woof phoof overwritten
-translations: { fi: /2016/9/14/testi }
-translation_key: /2016/9/14/testi
+translation_key: /2016/9/14/testi/
 
 puppies are awesome
 ===================

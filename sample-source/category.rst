@@ -1,6 +1,6 @@
 ok: true
 template: categories-en.html
-original: /kategoria
+translation_key: /kategoria/
 
 all categories
 --------------

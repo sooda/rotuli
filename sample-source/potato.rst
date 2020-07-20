@@ -1,7 +1,7 @@
 ok: true
 template: allpages-en.html
 language: en
-original: /peruna
+translation_key: /peruna/
 
 all of it
 ---------

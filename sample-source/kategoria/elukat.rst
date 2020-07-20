@@ -2,7 +2,7 @@ ok: true
 template: category-fi.html
 language: fi
 category_name: elukat
-translations: { en: /category/animals }
+translation_key: /kategoria/elukat
 
 vuf
 ---

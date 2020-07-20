@@ -1,6 +1,7 @@
+ok: true
 template: page-en.html
 language: dog
-original: /
+translation_key: /
 
 woof woof
 =========

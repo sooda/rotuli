@@ -1,5 +1,5 @@
 template: page-en.html
-original: random
+translation_key: /random/
 
 this is also not a blog post
 ============================

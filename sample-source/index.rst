@@ -1,7 +1,7 @@
 ok: true
 template: index-fi.html
 language: fi
-translation_key: indexpage
+translation_key: /
 
 Esimerkkisivusto
 ================

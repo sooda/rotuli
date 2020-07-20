@@ -1,8 +1,7 @@
 ok: true
 template: index-en.html
 language: en
-original: /
-translation_key: indexpage
+translation_key: /
 
 Sample website
 ==============

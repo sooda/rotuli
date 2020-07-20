@@ -6,11 +6,11 @@
 {% block headline %}a blog{% endblock headline %}
 {% block tagline %}this text is demo for language groups{% endblock tagline %}
 {% block navibar %}
-{% if meta.original %}<li>fi: <a href="{{ meta.original }}">{{ site.pages_by_url[meta.original].title }}</a></li>{% endif %}
-{{ base_macros::translation_link(language="fi", description_text="fi via group: ") }}
+{{ base_macros::translation_link(language="fi", description_text="fi: ") }}
+{% if page.meta.translation_key is defined %}
+	<li>(all page languages: {{ site.groups["translation_key"].pages
+	   | filter(attribute="meta.translation_key", value=page.meta.translation_key)
+	   | map(attribute="meta.language") | join(sep=", ") }})</li>
+{% endif %}
 	<li><a href="/potato/">meal</a></li>
 {% endblock navibar %}
-
-{# the language would be "backwards" because it's the orig that points to this page as a link called "en":
-{% if refs.translations.en %}<li>fi: <a href="{{ refs.translations.en.url }}">{{ refs.translations.en.title}}</a></li>{% endif %}
-#}
