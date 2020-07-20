@@ -1,20 +1,10 @@
-extern crate glob;
-extern crate tera;
-extern crate serde;
-extern crate serde_yaml;
-extern crate rst_parser;
-extern crate rst_renderer;
-extern crate document_tree;
-extern crate structopt;
-
-use glob::glob;
-
-use tera::{Tera, Context};
-
 use std::path::{Path, PathBuf};
 use std::collections::{BTreeSet, BTreeMap, HashMap};
 use std::iter::FromIterator;
 use std::fmt;
+
+use glob::glob;
+use tera::{Tera, Context};
 use serde::Serialize;
 use document_tree::element_categories::HasChildren;
 use structopt::StructOpt;
@@ -76,7 +66,7 @@ impl Group {
 }
 
 impl<'a> fmt::Debug for Group {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Group {{ name: {}, pages: {:?} }}", self.name,
                self.pages)
     }

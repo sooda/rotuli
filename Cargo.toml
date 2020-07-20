@@ -2,6 +2,7 @@
 name = "rotuli"
 version = "0.0.1"
 authors = ["Konsta Hölttä <sooda@iki.fi>"]
+edition = "2018"
 description = "the most universal content processor for static websites and the like"
 repository = "https://github.com/sooda/rotuli"
 license = "MIT"
