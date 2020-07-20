@@ -23,7 +23,6 @@ use document_tree::element_categories::HasChildren;
 // Metadata keys treated in a special way; could use strings in-place, but now they're in a single
 // place here for explicitness.
 const MAGIC_META_TEMPLATE: &'static str = "template";
-const MAGIC_META_ORIGINAL: &'static str = "original";
 const MAGIC_META_URL_AS_IS: &'static str = "url_as_is";
 
 #[derive(Debug)]
@@ -89,7 +88,6 @@ struct Page {
     summary_rendered: String,
     // filled after initial page construction
     groups: Vec<GroupReference>,
-    translations: Vec<PageReference>
 }
 
 fn read_file(p: &Path) -> String {
@@ -139,25 +137,10 @@ impl Page {
             content_rendered: render_result.body,
             summary_rendered: render_result.summary,
             groups: vec![],
-            translations: vec![]
         }
     }
 
-    // XXX: will be replaced with general groups
-    fn original_url(&self) -> Option<PathBuf> {
-        self.metadata.get(MAGIC_META_ORIGINAL).map(|meta| {
-            let orig = Path::new(meta.as_str().unwrap());
-            if orig.starts_with("/") {
-                orig.to_path_buf()
-            } else {
-                // :( FIXME: can't get this functionality just via raw metadata, but perhaps via
-                // custom types (yaml tags)
-                self.url.parent().unwrap().join(orig)
-            }
-        })
-    }
-
-    fn _display_url(&self) -> String {
+    fn display_url(&self) -> String {
         let as_is = &self.metadata.get(MAGIC_META_URL_AS_IS)
             .map(|x| x.as_bool().unwrap()).unwrap_or(false);
 
@@ -184,7 +167,6 @@ impl Page {
     }
 
     fn title(&self) -> &str {
-        // FIXME: read the rst title and default to it
         self.metadata.get("title").map(|x| x.as_str().unwrap()).unwrap_or(&self.title)
     }
 }
@@ -198,7 +180,7 @@ fn discover_source(pathname: &str) -> Vec<PathBuf> {
     pathbufs
 }
 
-fn pages_by_key(pages: &Vec<Page>, name: &str) -> Vec<PageReference> {
+fn pages_by_metadata_key(pages: &Vec<Page>, name: &str) -> Vec<PageReference> {
     pages.iter().enumerate()
         .filter(|&(_, p)| p.metadata.contains_key(name))
         .map(|(i, _)| PageReference(i))
@@ -220,17 +202,9 @@ impl Site {
             .map(|x| x.as_bool().unwrap())
             .unwrap_or(false);
         let pages: Vec<_> = srcpaths.iter()
-            .map(|path| Page::from_disk(path, dir)).filter(page_ok).collect();
-
-        // debug notes
-        /*
-        for p in &pages {
-            println!("{:?}", p);
-            println!("path {:?}", p.path);
-            println!("url {:?} {:?}", p.url, p.display_url());
-            println!("language {:?}", p.language());
-        }
-        */
+            .map(|path| Page::from_disk(path, dir))
+            .filter(page_ok)
+            .collect();
 
         // Move pages to site, construct groups
         let mut site = Site { _directory: dir.to_path_buf(), pages: pages, groups: vec![] };
@@ -240,7 +214,7 @@ impl Site {
             .fold(vec![], |mut tot, key| { tot.extend(key); tot })
         );
         site.groups = group_names.iter().map(
-            |key| Group::new(key, pages_by_key(&site.pages, key))).collect();
+            |key| Group::new(key, pages_by_metadata_key(&site.pages, key))).collect();
 
         // Transpose groups from (list of pages by group ref) into (list of groups by page ref)
         let pagegroups = (0..site.pages.len()).map(
@@ -250,40 +224,10 @@ impl Site {
             p.groups = gs;
         }
 
-        // build translation cross-references for pages that link to originals
-        // XXX: this has to become translation-agnostic and more general, so that pages are
-        // detected in any metadata group and crossrefs built on all of them (like categories)
-        // (perhaps use a custom datatype for this, or hack it up with special hashes for now)
+        // TODO: custom datatypes for relative urls and stuff if needed to refer to specific pages
+        // (wait for tags or hack it up with special hashes for now as a workaround datatype)
         // https://github.com/chyh1990/yaml-rust/issues/35
-        let mut translations: Vec<Vec<PageReference>> = vec![vec![]; site.pages.len()];
-        {
-            let orig_id_by_page = |p: &Page| {
-                p.original_url().map(|url| site.page_by_url(url.to_str().unwrap()))
-            };
-
-            // first, let the sources (original pages) know there's pages at the other end of the
-            // edges of this undirected graph
-            let mut from_origs: Vec<Vec<PageReference>> = vec![vec![]; site.pages.len()];
-            for (i, p) in site.pages.iter().enumerate() {
-                let orig_id = orig_id_by_page(p);
-                match orig_id {
-                    Some(id) => from_origs[id.0].push(PageReference(i)),
-                    None => () // pop up a verbose message?
-                };
-            }
-            // then, flip edges to the other direction by copying the lists; also record cycle edges from
-            // origs to origs so the translation lists are the same and complete for every translated page
-            for (orig_i, dests) in from_origs.iter_mut().enumerate() {
-                if !dests.is_empty() { dests.push(PageReference(orig_i)); }
-                for pageref in dests.iter() {
-                    // each page has just one original, so the original's link list is complete
-                    translations[pageref.0] = dests.clone();
-                }
-            }
-        }
-        for (p, ts) in site.pages.iter_mut().zip(translations.into_iter()) {
-            p.translations = ts;
-        }
+        // e.g.: other_thing: { url_magic: ../stuff/ }
 
         site
     }
@@ -618,20 +562,6 @@ fn main() {
     tera.register_filter("flatten_array", flatten_array);
     tera.register_filter("before_attr", before_attr);
     tera.register_filter("after_attr", after_attr);
-
-    println!("--- yiss! groups ---");
-
-    for g in site.groups.iter().enumerate() {
-        println!("{:?}", g);
-    }
-
-    println!("--- yiss! pages ---");
-
-    for p in site.pages.iter().enumerate() {
-        println!("{:?}", p);
-    }
-
-    println!("--- yiss! render ---");
 
     site.render(&tera, output);
 }
