@@ -1,11 +1,17 @@
 {% macro translation_link(language, description_text) -%}
 {% if page.meta.translation_key is defined %}
 	{# (note that no default of [] needed because at least the current page exists) #}
-	{% set translation_page = site.groups["translation_key"].pages
+	{% set translations_for_lang = site.groups["translation_key"].pages
 	   | filter(attribute="meta.translation_key", value=page.meta.translation_key)
-	   | filter(attribute="meta.language", value=language) | first %}
+	   | filter(attribute="meta.language", value=language) %}
+	{% set translation_page = translations_for_lang | first %}
 	{% if translation_page %}
 	<li>{{ description_text }}<a href="{{ translation_page.url }}">{{ translation_page.title }}</a></li>
+		{%- set translation_page_check = translations_for_lang | last -%}
+		{%- if translation_page != translation_page_check -%}
+			{{ throw(message="multiple translations in the same language found! dupes: "
+				~ translation_page.url ~ " and " ~ translation_page_check.url) }}
+		{%- endif %}
 	{%- endif %}
 {%- endif %}
 {#
