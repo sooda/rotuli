@@ -22,6 +22,9 @@ use document_tree::element_categories::HasChildren;
 // place here for explicitness.
 const MAGIC_META_TEMPLATE: &'static str = "template";
 const MAGIC_META_URL_AS_IS: &'static str = "url_as_is";
+const MAGIC_META_TITLE: &'static str = "title";
+
+const MAGIC_INDEX_SOURCE: &'static str = "index.rst";
 
 #[derive(Debug)]
 struct Metadata {
@@ -43,15 +46,15 @@ impl Metadata {
     }
 
     fn keys(&self) -> Vec<String> {
-        self.data.iter().map(|(k, _)| k.as_str().unwrap().to_owned()).collect()
+        self.data.iter().map(|(k, _)| k.as_str().expect("only string keys for now please").to_owned()).collect()
     }
 
-    fn contains_key(&self, name: &str) -> bool {
-        self.data.contains_key(&serde_yaml::to_value(name).unwrap())
+    fn contains_key(&self, key: &str) -> bool {
+        self.data.contains_key(&serde_yaml::to_value(key).expect("string serialization failed??"))
     }
 
     fn from_string(s: &str) -> Metadata {
-        let value = serde_yaml::from_str(s).unwrap();
+        let value = serde_yaml::from_str(s).expect("metadata deserialization failed");
         Metadata { data: value }
     }
 }
@@ -97,17 +100,19 @@ struct Page {
 // ("src/foo/some-page.rst", "src") -> "/foo/some-page"
 // ("src/foo/some-page.xml.rst", "src") -> "/foo/some-page.xml"
 fn make_url(path: &Path, root: &Path) -> PathBuf {
-    let formatted = if path.ends_with("index.rst") {
+    let parent = path.parent().expect("a file must has a parent");
+    let formatted = if path.ends_with(MAGIC_INDEX_SOURCE) {
         // just strip the index part off
-        path.parent().unwrap().to_path_buf()
+        parent.to_path_buf()
     } else {
         // strip markup extension, append back to the directory
-        path.parent().unwrap().join(path.file_stem().unwrap())
+        parent.join(path.file_stem().expect("this was supposed to be a file"))
     };
-    let child = formatted.strip_prefix(root).unwrap();
+    let from_root = formatted.strip_prefix(root).expect("this was built from the root!!");
 
-    // perhaps should return a string, but a path is more easily modified later if necessary
-    Path::new("/").join(child)
+    // perhaps should return a string because this isn't a real file in the fs anymore, but a path
+    // is more easily modified later if necessary
+    Path::new("/").join(from_root)
 }
 
 impl Page {
@@ -160,16 +165,18 @@ impl Page {
     }
 
     fn template_name(&self) -> &str {
-        self.metadata.get(MAGIC_META_TEMPLATE).unwrap().as_str().unwrap()
+        self.metadata.get(MAGIC_META_TEMPLATE).expect("must specify template")
+            .as_str().expect("template name must be a string")
     }
 
     fn title(&self) -> &str {
-        self.metadata.get("title").map(|x| x.as_str().unwrap()).unwrap_or(&self.title)
+        self.metadata.get(MAGIC_META_TITLE).map(|x| x.as_str().expect("title must be a string"))
+            .unwrap_or(&self.title)
     }
 }
 
 fn discover_source(pathname: &str) -> Vec<PathBuf> {
-    let paths = glob(&*(pathname.to_string() + "/**/*.rst")).unwrap();
+    let paths = glob(&*(pathname.to_string() + "/**/*.rst")).expect("invalid search pattern");
     // silently ignore Err items, unreadable files are skipped on purpose
     // (FIXME: verbose mode to print them)
     let pathbufs: Vec<_> = paths.filter_map(|x| x.ok()).collect();
@@ -227,17 +234,29 @@ impl Site {
         site
     }
 
+    fn is_empty(&self) -> bool {
+        self.pages.is_empty()
+    }
+
     // TODO cleanup & safety:
     // fn enumerate_pages() -> ... { self.pages.iter.enumerate() returning PageReference instead of usize
     // fn enumerate_groups() -> ..
 
     fn groups_for(&self, page: PageReference) -> Vec<GroupReference> {
-        self.pages[page.0].metadata.keys().iter().map(|k| self.get_group(k)).collect()
-        //self.groups.iter().enumerate().filter(|&(i, g)| g.pages.contains(&page)).map(|(i, g)| GroupReference(i)).collect()
+        self.pages[page.0].metadata.keys().iter()
+            .map(|k| self.get_group(k).expect("groups do not match pages"))
+            .collect()
+        // or the other way:
+        // self.groups.iter().enumerate()
+        //     .filter(|&(_, g)| g.pages.contains(&page))
+        //     .map(|(i, _)| GroupReference(i))
+        //     .collect()
+        // but the above looks more natural and returns them in the specified order
     }
 
-    fn get_group(&self, name: &str) -> GroupReference {
-        GroupReference(self.groups.iter().enumerate().find(|&(_, x)| x.name == name).unwrap().0)
+    fn get_group(&self, name: &str) -> Option<GroupReference> {
+        self.groups.iter().enumerate().find(|&(_, g)| g.name == name)
+            .map(|(i, _)| GroupReference(i))
     }
 
     fn render(&self, tera: &Tera, output_dir: &str) {
@@ -272,7 +291,7 @@ impl Site {
 
         let pages_cx = ok_pages()
             .map(|p| PageContext {
-                path: p.path.to_str().unwrap(),
+                path: p.path.to_str().expect("only UTF-8 directories please"),
                 url: p.display_url(),
                 title: p.title(),
                 meta: &p.metadata.data,
@@ -414,8 +433,9 @@ fn first_document_paragraph(document: &document_tree::Document) -> String {
                 if let ec::BodyElement::Paragraph(_) = &**y {
                     let mut rendered_bytes = Vec::new();
                     let doc = document_tree::Document::with_children(vec![element.clone()]);
-                    rst_renderer::render_html(&doc, &mut rendered_bytes, false).unwrap();
-                    String::from_utf8(rendered_bytes).unwrap()
+                    rst_renderer::render_html(&doc, &mut rendered_bytes, false)
+                        .expect("failed to render the first rst paragraph");
+                    String::from_utf8(rendered_bytes).expect("only UTF-8 documents please")
                 } else {
                     // Perhaps a list or something, behaviour would be ambiguous for now
                     "".to_string()
@@ -445,12 +465,14 @@ fn rstrender(s: &str) -> RenderedRst {
         // some pages might not need any body content if it comes from templates only
         return RenderedRst { title: "".to_string(), summary: "".to_string(), body: "".to_string() }
     }
-    let document = rst_parser::parse(s).unwrap();
+    let document = rst_parser::parse(s).expect("failed to parse rst document");
+    let mut rendered_bytes = Vec::new();
+    rst_renderer::render_html(&document, &mut rendered_bytes, false)
+        .expect("failed to render the rst document even though it parsed fine");
+    let body = String::from_utf8(rendered_bytes).expect("only UTF-8 documents please");
+
     let title = document_title(&document);
     let summary = first_document_paragraph(&document);
-    let mut rendered_bytes = Vec::new();
-    rst_renderer::render_html(&document, &mut rendered_bytes, false).unwrap();
-    let body = String::from_utf8(rendered_bytes).unwrap();
 
     RenderedRst { title, summary, body }
 }
@@ -534,9 +556,13 @@ fn after_attr(value: &tera::Value,
 }
 
 fn main() {
-    let source = &env::args().nth(1).unwrap();
-    let output = &env::args().nth(2).unwrap();
+    let source = &env::args().nth(1).expect("source arg missing");
+    let output = &env::args().nth(2).expect("dest arg missing");
     let site = Site::new(source);
+
+    if site.is_empty() {
+        panic!("no files found");
+    }
 
     let tera = Tera::new("sample-templates/**/*.html");
     let mut tera = match tera {
