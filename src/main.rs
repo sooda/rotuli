@@ -35,7 +35,13 @@ type MetadataValue = serde_yaml::Value;
 impl Metadata {
     // note: would be nice to have the as_bool() etc here too
     fn get(&self, key: &str) -> Option<&MetadataValue> {
-        self.data.get(&serde_yaml::to_value(key).unwrap())
+        self.data.get(&serde_yaml::to_value(key).expect("string serialization failed??"))
+    }
+
+    fn get_bool_or_false(&self, key: &str) -> bool {
+        self.get(key)
+            .map(|x| x.as_bool().expect(&format!("metadata `{}' does not parse as a bool", key)))
+            .unwrap_or(false)
     }
 
     fn keys(&self) -> Vec<String> {
@@ -141,8 +147,7 @@ impl Page {
     }
 
     fn display_url(&self) -> String {
-        let as_is = &self.metadata.get(MAGIC_META_URL_AS_IS)
-            .map(|x| x.as_bool().unwrap()).unwrap_or(false);
+        let as_is = &self.metadata.get_bool_or_false(MAGIC_META_URL_AS_IS);
 
         if self.path.ends_with("index.rst") || !as_is {
             self.url.to_str().unwrap().to_owned() + "/"
@@ -152,8 +157,7 @@ impl Page {
     }
 
     fn url_file(&self) -> PathBuf {
-        let as_is = &self.metadata.get(MAGIC_META_URL_AS_IS)
-            .map(|x| x.as_bool().unwrap()).unwrap_or(false);
+        let as_is = &self.metadata.get_bool_or_false(MAGIC_META_URL_AS_IS);
 
         if *as_is {
             self.url.strip_prefix("/").unwrap().to_path_buf()
@@ -198,9 +202,7 @@ impl Site {
         // Load source data as pages with just metadata properly initialized
         let srcpaths = discover_source(dir);
         let dir = Path::new(dir);
-        let page_ok = |p: &Page| p.metadata.get("ok")
-            .map(|x| x.as_bool().unwrap())
-            .unwrap_or(false);
+        let page_ok = |p: &Page| p.metadata.get_bool_or_false("ok");
         let pages: Vec<_> = srcpaths.iter()
             .map(|path| Page::from_disk(path, dir))
             .filter(page_ok)
@@ -281,9 +283,7 @@ impl Site {
         }
 
         // XXX: this is here for now to remind about a possible additional post-load draft flag
-        let page_ok = |p: &&Page| p.metadata.get("ok")
-            .map(|x| x.as_bool().unwrap())
-            .unwrap_or(false);
+        let page_ok = |p: &&Page| p.metadata.get_bool_or_false("ok");
         // closure because cloning one filter isn't ergonomic
         let ok_pages = || self.pages.iter().filter(page_ok);
 
