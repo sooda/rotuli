@@ -21,7 +21,7 @@
 		<!-- Depending on the filesystem paths might not be optimal; consider what happens when
 	  rotuli is executed in some other directory than the root. The urls are identical in hierarchy
 		so perhaps that could be used here. -->
-		src: <a href="https://github-or-whatever.com/anonymous/blog/{{ page.path }}">git</a>
+		src in local "github": <a href="file://{{ site.directory }}{{ page.path }}">git</a>
 	</footer>
 </body>
 </html>

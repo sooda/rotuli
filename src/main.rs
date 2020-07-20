@@ -138,7 +138,7 @@ impl Page {
         let render_result = rstrender(content);
 
         Page {
-            path: path.to_path_buf(),
+            path: Path::new("/").join(path.strip_prefix(root).expect("glob betrayed us")),
             url: url,
             title: render_result.title,
             metadata: metadata,
@@ -201,7 +201,7 @@ fn pages_by_metadata_key(pages: &Vec<Page>, name: &str) -> Vec<PageReference> {
 }
 
 struct Site {
-    _directory: PathBuf,
+    directory: PathBuf,
     pages: Vec<Page>,
     groups: Vec<Group>,
 }
@@ -218,7 +218,7 @@ impl Site {
             .collect();
 
         // Move pages to site, construct groups
-        let mut site = Site { _directory: dir.to_path_buf(), pages: pages, groups: vec![] };
+        let mut site = Site { directory: dir.to_path_buf(), pages: pages, groups: vec![] };
         let group_names = BTreeSet::from_iter(
             site.pages.iter()
             .map(|p| p.metadata.keys())
@@ -275,6 +275,7 @@ impl Site {
 
         #[derive(Debug, Serialize)]
         struct SiteContext<'a> {
+            directory: String,
             pages: &'a Vec<PageContext<'a>>,
             pages_by_url: BTreeMap<&'a str, &'a PageContext<'a>>,
             groups: BTreeMap<&'a str, GroupContext<'a>>,
@@ -303,6 +304,8 @@ impl Site {
         })).collect();
 
         let site_cx = SiteContext {
+            directory: self.directory.canonicalize().expect("can't get this far with a bad dir")
+                .to_str().expect("only UTF-8 directories please").to_owned(),
             pages: &pages_cx,
             pages_by_url: pages_by_url_cx,
             groups: groups_cx,
