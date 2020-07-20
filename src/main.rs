@@ -12,8 +12,6 @@ use tera::{Tera, Context};
 
 use std::env;
 use std::path::{Path, PathBuf};
-use std::fs::{File, create_dir_all};
-use std::io::{Read, Write};
 use std::collections::{BTreeSet, BTreeMap, HashMap};
 use std::iter::FromIterator;
 use std::fmt;
@@ -96,20 +94,6 @@ struct Page {
     groups: Vec<GroupReference>,
 }
 
-fn read_file(p: &Path) -> String {
-    let mut s = String::new();
-    let mut f = File::open(p).unwrap();
-    f.read_to_string(&mut s).unwrap();
-
-    s
-}
-
-fn write_file(p: &Path, s: &str) {
-    create_dir_all(p.parent().unwrap()).unwrap();
-    let mut f = File::create(p).unwrap();
-    f.write_all(s.as_bytes()).unwrap();
-}
-
 // ("src/foo/some-page.rst", "src") -> "/foo/some-page"
 // ("src/foo/some-page.xml.rst", "src") -> "/foo/some-page.xml"
 fn make_url(path: &Path, root: &Path) -> PathBuf {
@@ -129,7 +113,7 @@ fn make_url(path: &Path, root: &Path) -> PathBuf {
 impl Page {
     // all have a parent directory and a file, from discover_source constraints
     fn from_disk(path: &Path, root: &Path) -> Self {
-        let data = read_file(path);
+        let data = std::fs::read_to_string(path).expect("file vanished after finding it?");
         let split_pos = data.find("\n\n").expect(&format!(
                 "Missing metadata separator in {}", path.to_string_lossy()));
         let metadata = Metadata::from_string(&data[..split_pos]);
@@ -342,7 +326,9 @@ impl Site {
             };
 
             let outfile = output_dir.join(p.output_path());
-            write_file(&outfile, &tpl_rendered);
+            std::fs::create_dir_all(outfile.parent().expect("tried to write to the root, huh?"))
+                .expect("output dir is unwritable");
+            std::fs::write(&outfile, &tpl_rendered).expect("output file is unwritable");
         }
     }
 }
