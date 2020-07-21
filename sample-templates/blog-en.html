@@ -11,14 +11,14 @@
 	{# the default logic above and in the listing are not very useful because
 	the sort would explode if any page wouldn't have the meta.created_at
 	attribute... #}
-	{% set blog_entries = site.groups["blog"].pages
+	{%- set blog_entries = site.groups["blog"].pages
 		| filter(attribute="meta.language", value="en")
 		| sort(attribute="title")
 		| sort(attribute="meta.created_at") %}
 	<ul>
-		<ul>{% for p in blog_entries %}
-			<li><a href="{{ p.url }}">{{ p.title }}</a> ({{ p.meta.created_at | default(value="fix date!") }})</li>{% endfor %}
-		</ul>
+	{%- for p in blog_entries %}
+		<li><a href="{{ p.url }}">{{ p.title }}</a> ({{ p.meta.created_at | default(value="fix date!") }})</li>
+	{%- endfor %}
 	</ul>
 
 	<p>entry before the current one: {% set prev_page = blog_entries

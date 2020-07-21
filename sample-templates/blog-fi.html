@@ -8,8 +8,8 @@
 
 	<p>Tämä on blogiartsu. Kaikki vastaavat tässä:</p>
 	<ul>
-		<ul>{% for p in site.groups["blog"].pages | filter(attribute="meta.language", value="fi") %}
-			<li><a href="{{ p.url }}">{{ p.title }}</a></li>{% endfor %}
-		</ul>
+	{%- for p in site.groups["blog"].pages | filter(attribute="meta.language", value="fi") %}
+		<li><a href="{{ p.url }}">{{ p.title }}</a></li>
+	{%- endfor %}
 	</ul>
 {% endblock content %}
