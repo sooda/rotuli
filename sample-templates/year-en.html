@@ -1,0 +1,18 @@
+{% extends "base-en.html" %}
+{% block content %}
+	{{ content | safe }}
+
+	{% set year = page.url | split(pat="/") | slice(start=1, end=2) | first %}
+
+	<p>Found year {{ year }}. All blog posts in all languages:</p>
+
+	{% set blog_entries = site.groups["blog"].pages
+		| sort(attribute="title")
+		| sort(attribute="meta.created_at") %}
+	<ul>
+			{% for p in blog_entries %}{% if p.meta.created_at is starting_with(year ~ "-") %}
+			<li>[{{ p.meta.language }}] <a href="{{ p.url }}">{{ p.title }}</a> ({{
+				p.meta.created_at }})</li>
+			{% endif %}{% endfor %}
+	</ul>
+{% endblock content %}
