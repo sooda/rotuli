@@ -545,6 +545,32 @@ fn after_attr(value: &tera::Value,
     Ok(value)
 }
 
+fn take_until_attr(value: &tera::Value, args: &HashMap<String, tera::Value>)
+-> tera::Result<tera::Value> {
+    let arr = tera::try_get_value!("take_until_attr", "value", Vec<tera::Value>, value);
+    if arr.is_empty() {
+        return Ok(tera::Value::Null);
+    }
+
+    let key = match args.get("attribute") {
+        Some(val) => tera::try_get_value!("take_until_attr", "attribute", String, val),
+        None => return Err(tera::Error::msg("The `take_until_attr` filter has to have an `attribute` argument")),
+    };
+
+    let val_lookup = match args.get("value") {
+        Some(val) => val,
+        None => return Err(tera::Error::msg("The `take_until_attr` filter has to have an `value` argument")),
+    };
+
+    let json_pointer = get_json_pointer(&key);
+
+    let value = arr.iter()
+        .take_while(|&x| x.pointer(&json_pointer).map_or(false, |value| value != val_lookup))
+        .collect::<Vec<_>>();
+
+    Ok(tera::to_value(value).expect("couldn't re-value an array of Tera values??"))
+}
+
 #[derive(Debug, StructOpt)]
 #[structopt(name = "rotuli", about = "The universal document processor")]
 struct Opt {
@@ -577,6 +603,7 @@ fn main() {
     tera.register_filter("flatten_array", flatten_array);
     tera.register_filter("before_attr", before_attr);
     tera.register_filter("after_attr", after_attr);
+    tera.register_filter("take_until_attr", take_until_attr);
 
     site.render(&tera, &opt.output_path);
 }
