@@ -488,63 +488,6 @@ fn get_json_pointer(key: &str) -> String {
     ["/", &key.replace(".", "/")].join("")
 }
 
-fn before_attr(value: &tera::Value, args: &HashMap<String, tera::Value>)
--> tera::Result<tera::Value> {
-    let arr = tera::try_get_value!("before_attr", "value", Vec<tera::Value>, value);
-    if arr.is_empty() {
-        return Ok(tera::Value::Null);
-    }
-
-    let key = match args.get("attribute") {
-        Some(val) => tera::try_get_value!("before_attr", "attribute", String, val),
-        None => return Err(tera::Error::msg("The `before_attr` filter has to have an `attribute` argument")),
-    };
-
-    let val_lookup = match args.get("value") {
-        Some(val) => val,
-        None => return Err(tera::Error::msg("The `before_attr` filter has to have an `value` argument")),
-    };
-
-    let json_pointer = get_json_pointer(&key);
-
-    let value = arr.iter().zip(arr.iter().skip(1))
-        .find(|&(_, current)| current.pointer(&json_pointer).map_or(false, |value| value == val_lookup))
-        .map(|(preceding, _)| preceding.clone()).unwrap_or(tera::Value::Null);
-
-    // An unmatched attr or a match at the first one (with no previous) is never an error; null is
-    // returned in those cases.
-    Ok(value)
-}
-
-fn after_attr(value: &tera::Value,
-               args: &std::collections::HashMap<String, tera::Value>)
--> tera::Result<tera::Value> {
-    let arr = tera::try_get_value!("after_attr", "value", Vec<tera::Value>, value);
-    if arr.is_empty() {
-        return Ok(tera::Value::Null);
-    }
-
-    let key = match args.get("attribute") {
-        Some(val) => tera::try_get_value!("after_attr", "attribute", String, val),
-        None => return Err(tera::Error::msg("The `after_attr` filter has to have an `attribute` argument")),
-    };
-
-    let val_lookup = match args.get("value") {
-        Some(val) => val,
-        None => return Err(tera::Error::msg("The `after_attr` filter has to have an `value` argument")),
-    };
-
-    let json_pointer = get_json_pointer(&key);
-
-    let value = arr.iter().zip(arr.iter().skip(1))
-        .find(|&(current, _)| current.pointer(&json_pointer).map_or(false, |value| value == val_lookup))
-        .map(|(_, following)| following.clone()).unwrap_or(tera::Value::Null);
-
-    // An unmatched attr or a match at the last one (with no next) is never an error; null is
-    // returned in those cases.
-    Ok(value)
-}
-
 fn take_until_attr(value: &tera::Value, args: &HashMap<String, tera::Value>)
 -> tera::Result<tera::Value> {
     let arr = tera::try_get_value!("take_until_attr", "value", Vec<tera::Value>, value);
@@ -601,8 +544,6 @@ fn main() {
         }
     };
     tera.register_filter("flatten_array", flatten_array);
-    tera.register_filter("before_attr", before_attr);
-    tera.register_filter("after_attr", after_attr);
     tera.register_filter("take_until_attr", take_until_attr);
 
     site.render(&tera, &opt.output_path);
