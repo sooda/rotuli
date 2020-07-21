@@ -17,7 +17,7 @@
 		| sort(attribute="meta.created_at") %}
 	<ul>
 		<ul>{% for p in blog_entries %}
-			<li><a href="{{ p.url }}/">{{ p.title }}</a> ({{ p.meta.created_at | default(value="fix date!") }})</li>{% endfor %}
+			<li><a href="{{ p.url }}">{{ p.title }}</a> ({{ p.meta.created_at | default(value="fix date!") }})</li>{% endfor %}
 		</ul>
 	</ul>
 

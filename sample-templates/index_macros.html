@@ -7,7 +7,7 @@
 
 	<ul>
 	{%- for p in blog_entries -%}
-		<li><a href="{{ p.url }}/">{{ p.title }}</a>
+		<li><a href="{{ p.url }}">{{ p.title }}</a>
 			{{ p.meta.created_at }}
 			{{ category_text}}{{
 				blog_macros::category_listing(page=p, language=language,

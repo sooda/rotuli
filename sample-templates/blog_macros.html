@@ -1,7 +1,7 @@
 {% macro category_listing(page, language, base_url, none_description) -%}
 	{%- if page.meta.category is defined -%}
-		{%- for c in page.meta.category -%}
-			{%- if not loop.first %}, {% endif %}<a href="{{ base_url }}{{ c }}/">{{ c }}</a>
+		{%- for catname in page.meta.category -%}
+			{%- if not loop.first %}, {% endif %}<a href="{{ base_url }}{{ catname }}/">{{ catname }}</a>
 
 			{%- set cat_names = site.groups["category_name"].pages
 				| filter(attribute="meta.language", value=language)
@@ -9,8 +9,8 @@
 			{# what's up with this? Inlining the above into the condition is a
 			syntax error. Filters apparently cannot appear in expressions,
 			although they are valid inside "{{ }}". #}
-			{%- if not cat_names is containing(c) -%}
-				{{ throw(message="category `" ~ c ~ "' appears to be missing its page") }}
+			{%- if not cat_names is containing(catname) -%}
+				{{ throw(message="category `" ~ catname ~ "' appears to be missing its page") }}
 			{%- endif -%}
 		{%- endfor -%}
 	{%- else -%}
