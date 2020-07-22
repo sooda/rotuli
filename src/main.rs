@@ -525,6 +525,12 @@ struct Opt {
 
 fn main() {
     let opt = Opt::from_args();
+
+    if opt.output_path.exists() {
+        println!("error: output path already exists");
+        return;
+    }
+
     let site = Site::new(opt.source_path);
 
     if site.is_empty() {
