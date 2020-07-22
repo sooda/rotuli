@@ -8,14 +8,13 @@ use tera::{Tera, Context};
 use serde::Serialize;
 use document_tree::element_categories::HasChildren;
 use structopt::StructOpt;
+use std::str::FromStr;
 
 // Metadata keys treated in a special way; could use strings in-place, but now they're in a single
 // place here for explicitness.
 const MAGIC_META_TEMPLATE: &'static str = "template";
 const MAGIC_META_URL_AS_IS: &'static str = "url_as_is";
 const MAGIC_META_TITLE: &'static str = "title";
-
-const MAGIC_INDEX_SOURCE: &'static str = "index.rst";
 
 #[derive(Debug)]
 struct Metadata {
@@ -88,11 +87,11 @@ struct Page {
     groups: Vec<GroupReference>,
 }
 
-// ("src/foo/some-page.rst", "src") -> "/foo/some-page"
-// ("src/foo/some-page.xml.rst", "src") -> "/foo/some-page.xml"
-fn make_url(path: &Path, root: &Path) -> PathBuf {
+// ("src/foo/some-page.markup", "src") -> "/foo/some-page"
+// ("src/foo/some-page.xml.markup", "src") -> "/foo/some-page.xml"
+fn make_url(path: &Path, root: &Path, index_filename: &Path) -> PathBuf {
     let parent = path.parent().expect("a file must has a parent");
-    let formatted = if path.ends_with(MAGIC_INDEX_SOURCE) {
+    let formatted = if path.ends_with(index_filename) {
         // just strip the index part off
         parent.to_path_buf()
     } else {
@@ -108,13 +107,13 @@ fn make_url(path: &Path, root: &Path) -> PathBuf {
 
 impl Page {
     // all have a parent directory and a file, from discover_source constraints
-    fn from_disk(path: &Path, root: &Path) -> Self {
+    fn from_disk(path: &Path, root: &Path, index_filename: &Path) -> Self {
         let data = std::fs::read_to_string(path).expect("file vanished after finding it?");
         let split_pos = data.find("\n\n").expect(&format!(
                 "Missing metadata separator in {}", path.to_string_lossy()));
         let metadata = Metadata::from_string(&data[..split_pos]);
         let content = &data[split_pos + 2..];
-        let url = make_url(path, root);
+        let url = make_url(path, root, index_filename);
         let render_result = rstrender(content);
 
         Page {
@@ -166,9 +165,9 @@ impl Page {
     }
 }
 
-fn discover_source(source: &Path) -> Vec<PathBuf> {
+fn discover_source(source: &Path, ml: MarkupLanguage) -> Vec<PathBuf> {
     let pathname = source.to_str().expect("only UTF-8 directories please").to_owned();
-    let paths = glob(&*(pathname + "/**/*.rst")).expect("invalid search pattern");
+    let paths = glob(&*(pathname + "/**/*." + &ml.to_string())).expect("invalid search pattern");
     // silently ignore Err items, unreadable files are skipped on purpose
     // (FIXME: verbose mode to print them)
     let pathbufs: Vec<_> = paths.filter_map(|x| x.ok()).collect();
@@ -189,13 +188,48 @@ struct Site {
     groups: Vec<Group>,
 }
 
+#[derive(Debug, Copy, Clone)]
+enum MarkupLanguage {
+    RestructuredText,
+}
+
+#[derive(Debug)]
+struct MarkupLanguageParseError;
+
+impl fmt::Display for MarkupLanguageParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "unknown markup language, please use one of: [rst]")
+    }
+}
+
+impl FromStr for MarkupLanguage {
+    type Err = MarkupLanguageParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "rst" => Ok(MarkupLanguage::RestructuredText),
+            _ => Err(MarkupLanguageParseError),
+        }
+    }
+}
+impl fmt::Display for MarkupLanguage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match *self {
+            MarkupLanguage::RestructuredText => "rst",
+        };
+        write!(f, "{}", s)
+    }
+}
+
 impl Site {
-    fn new(dir: PathBuf) -> Self {
+    fn new(dir: PathBuf, markup_language: MarkupLanguage, directory_index: &str) -> Self {
         // Load source data as pages with just metadata properly initialized
-        let srcpaths = discover_source(&dir);
+        let srcpaths = discover_source(&dir, markup_language);
         let page_ok = |p: &Page| p.metadata.get_bool_or_false("ok");
+
+        let index_filename = Path::new(directory_index).with_extension(markup_language.to_string());
         let pages: Vec<_> = srcpaths.iter()
-            .map(|path| Page::from_disk(path, &dir))
+            .map(|path| Page::from_disk(path, &dir, &index_filename))
             .filter(page_ok)
             .collect();
 
@@ -521,6 +555,10 @@ struct Opt {
     source_path: PathBuf,
     #[structopt(short, long, help = "write the results here")]
     output_path: PathBuf,
+    #[structopt(short, long, default_value="rst")]
+    markup_language: MarkupLanguage,
+    #[structopt(short, long, default_value="index")]
+    directory_index: String,
 }
 
 fn main() {
@@ -531,7 +569,7 @@ fn main() {
         return;
     }
 
-    let site = Site::new(opt.source_path);
+    let site = Site::new(opt.source_path, opt.markup_language, &opt.directory_index);
 
     if site.is_empty() {
         panic!("no files found");
