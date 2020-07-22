@@ -233,6 +233,10 @@ impl Site {
             .filter(page_ok)
             .collect();
 
+        if pages.iter().map(|p| p.display_url()).collect::<BTreeSet<_>>().len() != pages.len() {
+            panic!("duplicates found, do you have foo.rst and foo/index.rst?");
+        }
+
         // Move pages to site, construct groups
         let mut site = Site { directory: dir, pages: pages, groups: vec![] };
         let group_names = BTreeSet::from_iter(
