@@ -235,10 +235,10 @@ impl fmt::Display for MarkupLanguage {
 }
 
 impl Site {
-    fn new(dir: PathBuf, markup_language: MarkupLanguage, directory_index: &str) -> Self {
+    fn new(dir: PathBuf, markup_language: MarkupLanguage, directory_index: &str, draft_key: &str) -> Self {
         // Load source data as pages with just metadata properly initialized
         let (src_markup, src_plain_files) = discover_source(&dir, markup_language);
-        let page_ok = |p: &Page| p.metadata.get_bool_or_false("ok");
+        let page_ok = |p: &Page| !p.metadata.get_bool_or_false(draft_key);
 
         let index_filename = Path::new(directory_index).with_extension(markup_language.to_string());
         let pages: Vec<_> = src_markup.iter()
@@ -306,7 +306,7 @@ impl Site {
             .map(|(i, _)| GroupReference(i))
     }
 
-    fn render(&self, tera: &Tera, output_dir: &Path) {
+    fn render(&self, tera: &Tera, output_dir: &Path, draft_key: &str) {
         #[derive(Debug, Serialize)]
         struct PageContext<'a> {
             path: &'a str,
@@ -331,7 +331,7 @@ impl Site {
         }
 
         // XXX: this is here for now to remind about a possible additional post-load draft flag
-        let page_ok = |p: &&Page| p.metadata.get_bool_or_false("ok");
+        let page_ok = |p: &&Page| !p.metadata.get_bool_or_false(draft_key);
         // closure because cloning one filter isn't ergonomic
         let ok_pages = || self.pages.iter().filter(page_ok);
 
@@ -590,12 +590,14 @@ struct Opt {
     source_path: PathBuf,
     #[structopt(short, long, help = "write the results here")]
     output_path: PathBuf,
-    #[structopt(short, long, default_value="rst")]
+    #[structopt(long, default_value="rst")]
     markup_language: MarkupLanguage,
-    #[structopt(short, long, default_value="index")]
+    #[structopt(long, default_value="index")]
     directory_index: String,
-    #[structopt(short, long)]
+    #[structopt(long)]
     render_only: bool,
+    #[structopt(long, default_value="draft")]
+    draft_key: String,
 }
 
 fn main() {
@@ -606,7 +608,7 @@ fn main() {
         return;
     }
 
-    let site = Site::new(opt.source_path, opt.markup_language, &opt.directory_index);
+    let site = Site::new(opt.source_path, opt.markup_language, &opt.directory_index, &opt.draft_key);
 
     if site.is_empty() {
         panic!("no files found");
@@ -627,7 +629,7 @@ fn main() {
     tera.register_filter("flatten_array", flatten_array);
     tera.register_filter("take_until_attr", take_until_attr);
 
-    site.render(&tera, &opt.output_path);
+    site.render(&tera, &opt.output_path, &opt.draft_key);
     if !opt.render_only {
         site.copy_plain_files(&opt.output_path);
     }

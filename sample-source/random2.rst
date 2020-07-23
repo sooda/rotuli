@@ -1,3 +1,4 @@
+draft: true
 template: page-en.html
 translation_key: /random/
 

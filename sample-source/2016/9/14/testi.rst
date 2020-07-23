@@ -1,4 +1,3 @@
-ok: true
 template: blog-fi.html
 language: fi
 blog: true

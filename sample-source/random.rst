@@ -1,3 +1,4 @@
+draft: true
 template: page-fi.html
 translation_key: /random/
 

@@ -1,4 +1,3 @@
-ok: true
 template: index-en.html
 language: en
 translation_key: /

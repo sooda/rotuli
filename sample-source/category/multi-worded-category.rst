@@ -1,4 +1,3 @@
-ok: true
 template: category-en.html
 language: en
 category_name: multi-worded-category

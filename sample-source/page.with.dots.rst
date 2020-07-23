@@ -1,4 +1,3 @@
-ok: true
 template: page-en.html
 language: en
 

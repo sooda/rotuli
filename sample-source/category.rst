@@ -1,4 +1,3 @@
-ok: true
 template: categories-en.html
 language: en
 translation_key: /kategoria/

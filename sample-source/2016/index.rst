@@ -1,4 +1,3 @@
-ok: true
 template: year-en.html
 language: en
 

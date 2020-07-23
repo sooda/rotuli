@@ -1,4 +1,3 @@
-ok: true
 template: allpages-fi.html
 language: fi
 translation_key: /peruna/

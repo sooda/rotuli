@@ -1,4 +1,3 @@
-ok: true
 blog: true
 template: blog-en.html
 language: en
