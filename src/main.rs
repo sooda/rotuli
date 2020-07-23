@@ -167,7 +167,7 @@ impl Page {
 
 fn discover_source(source: &Path, ml: MarkupLanguage) -> Vec<PathBuf> {
     let pathname = source.to_str().expect("only UTF-8 directories please").to_owned();
-    let paths = glob(&*(pathname + "/**/*." + &ml.to_string())).expect("invalid search pattern");
+    let paths = glob(&(pathname + "/**/*." + ml.as_str())).expect("invalid search pattern");
     // silently ignore Err items, unreadable files are skipped on purpose
     // (FIXME: verbose mode to print them)
     let pathbufs: Vec<_> = paths.filter_map(|x| x.ok()).collect();
@@ -193,6 +193,14 @@ enum MarkupLanguage {
     RestructuredText,
 }
 
+impl MarkupLanguage {
+    fn as_str(&self) -> &'static str {
+        match *self {
+            MarkupLanguage::RestructuredText => "rst",
+        }
+    }
+}
+
 #[derive(Debug)]
 struct MarkupLanguageParseError;
 
@@ -214,10 +222,7 @@ impl FromStr for MarkupLanguage {
 }
 impl fmt::Display for MarkupLanguage {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match *self {
-            MarkupLanguage::RestructuredText => "rst",
-        };
-        write!(f, "{}", s)
+        write!(f, "{}", self.as_str())
     }
 }
 
