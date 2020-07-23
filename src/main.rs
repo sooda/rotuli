@@ -348,10 +348,13 @@ impl Site {
 
             let page_cx = &site_cx.pages[i];
 
+            // TODO: reserializing site every time might be heavy; consider creating a common
+            // context before the loop and extending the per-page context from it. Valgrind claims
+            // that it requires much more allocations though, so the question is which is faster,
+            // serialization or allocation.
             cx.insert("site", &site_cx);
             cx.insert("page", &page_cx);
             cx.insert("content", &p.content_rendered);
-            cx.insert("meta", &page_cx.meta);
 
             let tpl_rendered = match tera.render(p.template_name(), &cx) {
                 Ok(text) => text,

@@ -2,9 +2,9 @@
 {% block content %}
 	{{ content | safe }}
 
-	(debug: kategorianimi on "{{ meta.category_name }}")
+	(debug: kategorianimi on "{{ page.meta.category_name }}")
 
-	<ul>{% for p in site.groups["category"].pages %}{% if p.meta.category is containing(meta.category_name) %}
+	<ul>{% for p in site.groups["category"].pages %}{% if p.meta.category is containing(page.meta.category_name) %}
 		<li><a href="{{ p.url }}">{{ p.title }}</a></li>{% endif %}{% endfor %}
 	</ul>
 {% endblock content %}
