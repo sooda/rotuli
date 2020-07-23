@@ -296,7 +296,6 @@ impl Site {
             title: &'a str,
             meta: &'a serde_yaml::Mapping,
             summary: &'a str,
-            content: &'a str,
         }
 
         #[derive(Debug, Serialize)]
@@ -324,7 +323,6 @@ impl Site {
                 url: p.display_url(),
                 title: p.title(),
                 meta: &p.metadata.data,
-                content: &p.content_rendered,
                 summary: &p.summary_rendered,
             }).collect::<Vec<_>>();
 
