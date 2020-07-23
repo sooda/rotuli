@@ -170,7 +170,7 @@ fn discover_source(source: &Path, ml: MarkupLanguage) -> Vec<PathBuf> {
     let paths = glob(&(pathname + "/**/*." + ml.as_str())).expect("invalid search pattern");
     // silently ignore Err items, unreadable files are skipped on purpose
     // (FIXME: verbose mode to print them)
-    let pathbufs: Vec<_> = paths.filter_map(|x| x.ok()).collect();
+    let pathbufs: Vec<_> = paths.filter_map(|x| x.ok()).filter(|x| x.is_file()).collect();
 
     pathbufs
 }
