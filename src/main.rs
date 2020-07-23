@@ -74,18 +74,27 @@ impl<'a> fmt::Debug for Group {
 #[derive(Clone, Debug, PartialEq)]
 struct GroupReference(usize);
 
-#[derive(Debug)]
 struct Page {
     path: PathBuf,
     url: PathBuf,
     title: String,
     metadata: Metadata,
-    content: String,
+    _content: String,
     content_rendered: String,
     summary_rendered: String,
     // filled after initial page construction
     groups: Vec<GroupReference>,
 }
+
+impl fmt::Debug for Page {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Page")
+            .field("url", &self.url)
+            .field("title", &self.title)
+            .finish()
+    }
+}
+
 
 // ("src/foo/some-page.markup", "src") -> "/foo/some-page"
 // ("src/foo/some-page.xml.markup", "src") -> "/foo/some-page.xml"
@@ -121,7 +130,7 @@ impl Page {
             url: url,
             title: render_result.title,
             metadata: metadata,
-            content: content.to_string(),
+            _content: content.to_string(),
             content_rendered: render_result.body,
             summary_rendered: render_result.summary,
             groups: vec![],
