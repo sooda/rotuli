@@ -172,6 +172,14 @@ impl Page {
         self.metadata.get(MAGIC_META_TITLE).map(|x| x.as_str().expect("title must be a string"))
             .unwrap_or(&self.title)
     }
+
+    fn get_meta(&self, key: &str) -> Option<&MetadataValue> {
+        self.metadata.get(key)
+    }
+
+    fn url(&self) -> &Path {
+        &self.url
+    }
 }
 
 fn discover_source(source: &Path, ml: MarkupLanguage) -> (Vec<PathBuf>, Vec<PathBuf>) {
@@ -313,6 +321,12 @@ impl Site {
     fn get_group(&self, name: &str) -> Option<GroupReference> {
         self.groups.iter().enumerate().find(|&(_, g)| g.name == name)
             .map(|(i, _)| GroupReference(i))
+    }
+
+    fn group_pages(&self, group: GroupReference) -> Vec<&Page> {
+        let grp = &self.groups[group.0];
+        let belongs_to_grp = |p: &&Page| p.metadata.keys().iter().find(|&k| *k == grp.name).is_some();
+        self.pages.iter().filter(belongs_to_grp).collect()
     }
 
     fn render(&self, tera: &Tera, output_dir: &Path, draft_key: &str) {
@@ -609,6 +623,14 @@ struct Opt {
     draft_key: String,
 }
 
+fn blog_orphans(site: &Site) {
+    // FIXME: get iter from group_pages
+    let blog = site.group_pages(site.get_group("blog").expect("no blog entries"));
+    for page in blog.iter().filter(|b| b.get_meta("category").is_none()) {
+        println!("note: {} is a blog entry but has no categories", page.url().to_string_lossy());
+    }
+}
+
 fn main() {
     let opt = Opt::from_args();
 
@@ -642,4 +664,5 @@ fn main() {
     if !opt.render_only {
         site.copy_plain_files(&opt.output_path);
     }
+    blog_orphans(&site);
 }
