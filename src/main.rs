@@ -3,7 +3,7 @@ use std::collections::{BTreeSet, BTreeMap, HashMap};
 use std::iter::FromIterator;
 use std::fmt;
 
-use glob::glob;
+use glob::{glob_with, MatchOptions};
 use tera::{Tera, Context};
 use serde::Serialize;
 use document_tree::element_categories::HasChildren;
@@ -165,14 +165,21 @@ impl Page {
     }
 }
 
-fn discover_source(source: &Path, ml: MarkupLanguage) -> Vec<PathBuf> {
+fn discover_source(source: &Path, ml: MarkupLanguage) -> (Vec<PathBuf>, Vec<PathBuf>) {
     let pathname = source.to_str().expect("only UTF-8 directories please").to_owned();
-    let paths = glob(&(pathname + "/**/*." + ml.as_str())).expect("invalid search pattern");
+    let opts = MatchOptions {
+        require_literal_leading_dot: true,
+        ..Default::default()
+    };
+    let paths = glob_with(&(pathname + "/**/*"), opts).expect("invalid search pattern");
     // silently ignore Err items, unreadable files are skipped on purpose
     // (FIXME: verbose mode to print them)
     let pathbufs: Vec<_> = paths.filter_map(|x| x.ok()).filter(|x| x.is_file()).collect();
+    let is_markup = |x: &Path| x.extension().map_or(false, |e| e == ml.as_str());
+    let markup_files = pathbufs.iter().filter(|x| is_markup(x)).cloned().collect::<Vec<_>>();
+    let plain_files = pathbufs.into_iter().filter(|x| !is_markup(x)).collect::<Vec<_>>();
 
-    pathbufs
+    (markup_files, plain_files)
 }
 
 fn pages_by_metadata_key(pages: &Vec<Page>, name: &str) -> Vec<PageReference> {
@@ -186,6 +193,7 @@ struct Site {
     directory: PathBuf,
     pages: Vec<Page>,
     groups: Vec<Group>,
+    plain_files: Vec<PathBuf>,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -229,11 +237,11 @@ impl fmt::Display for MarkupLanguage {
 impl Site {
     fn new(dir: PathBuf, markup_language: MarkupLanguage, directory_index: &str) -> Self {
         // Load source data as pages with just metadata properly initialized
-        let srcpaths = discover_source(&dir, markup_language);
+        let (src_markup, src_plain_files) = discover_source(&dir, markup_language);
         let page_ok = |p: &Page| p.metadata.get_bool_or_false("ok");
 
         let index_filename = Path::new(directory_index).with_extension(markup_language.to_string());
-        let pages: Vec<_> = srcpaths.iter()
+        let pages: Vec<_> = src_markup.iter()
             .map(|path| Page::from_disk(path, &dir, &index_filename))
             .filter(page_ok)
             .collect();
@@ -243,7 +251,12 @@ impl Site {
         }
 
         // Move pages to site, construct groups
-        let mut site = Site { directory: dir, pages: pages, groups: vec![] };
+        let mut site = Site {
+            directory: dir,
+            pages: pages,
+            groups: vec![],
+            plain_files: src_plain_files,
+        };
         let group_names = BTreeSet::from_iter(
             site.pages.iter()
             .map(|p| p.metadata.keys())
@@ -382,6 +395,18 @@ impl Site {
             std::fs::create_dir_all(outfile.parent().expect("tried to write to the root, huh?"))
                 .expect("output dir is unwritable");
             std::fs::write(&outfile, &tpl_rendered).expect("output file is unwritable");
+        }
+    }
+
+    fn copy_plain_files(&self, output_dir: &Path) {
+        for x in &self.plain_files {
+            let relative_outpath = x.strip_prefix(&self.directory).expect("glob betrayed us");
+            let outfile = output_dir.join(relative_outpath);
+            // FIXME: create dirs in a separate pass first
+            std::fs::create_dir_all(outfile.parent().expect("tried to write to the root, huh?"))
+                .expect("output dir is unwritable");
+            println!("copy {:?} to {:?}", x, outfile);
+            std::fs::copy(x, outfile).expect("output file is unwritable");
         }
     }
 }
@@ -569,6 +594,8 @@ struct Opt {
     markup_language: MarkupLanguage,
     #[structopt(short, long, default_value="index")]
     directory_index: String,
+    #[structopt(short, long)]
+    render_only: bool,
 }
 
 fn main() {
@@ -601,4 +628,7 @@ fn main() {
     tera.register_filter("take_until_attr", take_until_attr);
 
     site.render(&tera, &opt.output_path);
+    if !opt.render_only {
+        site.copy_plain_files(&opt.output_path);
+    }
 }
