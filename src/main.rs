@@ -329,7 +329,7 @@ impl Site {
         self.pages.iter().filter(belongs_to_grp).collect()
     }
 
-    fn render(&self, tera: &Tera, output_dir: &Path, draft_key: &str) {
+    fn render(&self, tera: &Tera, output_dir: &Path, draft_key: &str, base_url: &str) {
         #[derive(Debug, Serialize)]
         struct PageContext<'a> {
             path: &'a str,
@@ -348,6 +348,7 @@ impl Site {
         #[derive(Debug, Serialize)]
         struct SiteContext<'a> {
             directory: String,
+            base_url: String,
             pages: &'a Vec<PageContext<'a>>,
             pages_by_url: BTreeMap<&'a str, &'a PageContext<'a>>,
             groups: BTreeMap<&'a str, GroupContext<'a>>,
@@ -377,6 +378,7 @@ impl Site {
         let site_cx = SiteContext {
             directory: self.directory.canonicalize().expect("can't get this far with a bad dir")
                 .to_str().expect("only UTF-8 directories please").to_owned(),
+            base_url: base_url.to_owned(),
             pages: &pages_cx,
             pages_by_url: pages_by_url_cx,
             groups: groups_cx,
@@ -621,6 +623,8 @@ struct Opt {
     render_only: bool,
     #[structopt(long, default_value="draft")]
     draft_key: String,
+    #[structopt(long, default_value="http://localhost")]
+    base_url: String,
 }
 
 fn blog_orphans(site: &Site) {
@@ -660,7 +664,7 @@ fn main() {
     tera.register_filter("flatten_array", flatten_array);
     tera.register_filter("take_until_attr", take_until_attr);
 
-    site.render(&tera, &opt.output_path, &opt.draft_key);
+    site.render(&tera, &opt.output_path, &opt.draft_key, &opt.base_url);
     if !opt.render_only {
         site.copy_plain_files(&opt.output_path);
     }

@@ -67,6 +67,7 @@ For example:
 * Automatic by-date groups to list content (e.g., blog posts or news) based on year, month or day
 * Listings of page kinds such as blog entries, tutorials and project entries via the content groups
 * Links to next and previous pages in a collection based on the current page index in a group
+* RSS feeds for all pages, pages in a certain category, in a set of categories, etc
 
 Why
 ---

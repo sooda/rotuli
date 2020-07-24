@@ -5,6 +5,13 @@
 	<title>{% block title %}{% endblock title %}</title>
 	<link rel="stylesheet" type="text/css" href="/css/main.css">
 	<link rel="alternate" type="application/rss+xml" href="/rss.xml">
+{%- if page.meta.translation_key is defined %}
+	{%- for p in site.groups["translation_key"].pages
+	    | filter(attribute="meta.translation_key", value=page.meta.translation_key)
+		| sort(attribute="meta.language") %}
+	<link rel="alternate" hreflang="{{ p.meta.language }}" href="{{ site.base_url }}{{p.url}}" />
+{%- endfor %}
+{%- endif %}
 </head>
 <body>
 	<header>
@@ -18,10 +25,7 @@
 		{% block content %}{% endblock content %}
 	</div>
 	<footer>
-		<!-- Depending on the filesystem paths might not be optimal; consider what happens when
-	  rotuli is executed in some other directory than the root. The urls are identical in hierarchy
-		so perhaps that could be used here. -->
-		src in local "github": <a href="file://{{ site.directory }}{{ page.path }}">git</a>
+		<p>src in local "github": <a href="file://{{ site.directory }}{{ page.path }}">git</a></p>
 	</footer>
 </body>
 </html>
