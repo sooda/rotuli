@@ -343,6 +343,8 @@ impl Site {
         struct GroupContext<'a> {
             name: &'a str,
             pages: Vec<&'a PageContext<'a>>,
+            // serde_yaml::Value does not know std::cmp::Ord, so let's play with strings for now
+            pages_by_str_value: BTreeMap<&'a str, Vec<&'a PageContext<'a>>>,
         }
 
         #[derive(Debug, Serialize)]
@@ -370,9 +372,28 @@ impl Site {
 
         let pages_by_url_cx = pages_cx.iter().map(|p| (p.url.as_str(), p)).collect();
 
+        // Lots and lots of maps for somewhat more ergonomic usage in templates. From this:
+        //   site.groups["language"].pages | filter(attribute="meta.language", value="en") | ...
+        // to this:
+        //   site.groups["language"].pages_by_str_value["en"] | ...
+        // (experimental)
+        let group_pages_by_str_value = |grp: &Group| -> BTreeMap<&str, Vec<&PageContext>> {
+            let mut map = BTreeMap::new();
+            for p in grp.pages.iter().map(|pageref| &pages_cx[pageref.0]) {
+                let val = p.meta.get(&serde_yaml::to_value(&grp.name).expect("string serialization failed??"))
+                    .expect("group guaranteed metadata key but it isn't there?");
+                if let Some(strval) = val.as_str() {
+                    let entry = map.entry(strval).or_insert(Vec::new());
+                    entry.push(p);
+                }
+            }
+            map
+        };
+
         let groups_cx = self.groups.iter().map(|g| (&g.name as &str, GroupContext {
             name: &g.name,
             pages: g.pages.iter().map(|pageref| &pages_cx[pageref.0]).collect(),
+            pages_by_str_value: group_pages_by_str_value(g),
         })).collect();
 
         let site_cx = SiteContext {
